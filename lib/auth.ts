@@ -12,12 +12,16 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   if (!token) return null;
   const payload = await verifySession(token);
   if (!payload) return null;
-  const row = await one<Omit<User, "password_hash">>(
-    "SELECT id, username, email, is_admin, bio, created_at FROM users WHERE id = ?",
+  const row = await one<{
+    id: number; username: string; email: string | null;
+    is_admin: number; bio: string | null; created_at: number;
+    avatar_data: string | null; custom_rank: string | null; banned_at: number | null;
+  }>(
+    "SELECT id, username, email, is_admin, bio, created_at, avatar_data, custom_rank, banned_at FROM users WHERE id = ?",
     [payload.uid]
   );
   if (!row) return null;
-  // libsql returns numeric columns as bigint sometimes; normalize.
+  if (row.banned_at && Number(row.banned_at) > 0) return null;  // banned users appear logged out
   return {
     id: Number(row.id),
     username: String(row.username),
@@ -25,6 +29,9 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     is_admin: (Number(row.is_admin) ? 1 : 0) as 0 | 1,
     bio: row.bio == null ? null : String(row.bio),
     created_at: Number(row.created_at),
+    avatar_data: row.avatar_data == null ? null : String(row.avatar_data),
+    custom_rank: row.custom_rank == null ? null : String(row.custom_rank),
+    banned_at: row.banned_at == null ? null : Number(row.banned_at),
   };
 }
 
@@ -83,12 +90,13 @@ export async function registerUser(input: RegisterInput): Promise<{ ok: true; us
 export async function authenticate(username: string, password: string): Promise<{ ok: true; userId: number } | { ok: false; error: string }> {
   const u = username.trim();
   if (!u || !password) return { ok: false, error: "Missing credentials" };
-  const row = await one<{ id: number; password_hash: string }>(
-    "SELECT id, password_hash FROM users WHERE username = ? OR email = ?",
+  const row = await one<{ id: number; password_hash: string; banned_at: number | null }>(
+    "SELECT id, password_hash, banned_at FROM users WHERE username = ? OR email = ?",
     [u, u]
   );
   if (!row) return { ok: false, error: "Invalid username or password" };
   const ok = await bcrypt.compare(password, String(row.password_hash));
   if (!ok) return { ok: false, error: "Invalid username or password" };
+  if (row.banned_at && Number(row.banned_at) > 0) return { ok: false, error: "This account is banned." };
   return { ok: true, userId: Number(row.id) };
 }

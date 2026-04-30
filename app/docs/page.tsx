@@ -9,6 +9,8 @@ const TOC = [
   ["Pocket — IPC", "pocket"],
   ["Manifest — capabilities", "manifest"],
   ["Deck — storage", "deck"],
+  ["TagFS — vs the file tree", "tagfs"],
+  ["use — switching context", "use"],
   ["TagBoot — UEFI loader", "boot"],
   ["Build & run", "build"],
   ["Source layout", "source"],
@@ -117,6 +119,63 @@ export default function DocsPage() {
             <p>
               The on-disk format is called <em>TagFS</em>. Mounting it into a Cabin means binding
               a Deck capability into that Cabin's Manifest — there is no global mount table.
+            </p>
+          </Section>
+
+          <Section id="tagfs" tag="draft" title="TagFS — vs the file tree">
+            <p>
+              POSIX organises persistence as a <em>tree</em>: directories nested inside directories,
+              each file pinned to one path. TagFS organises persistence as a <em>graph</em>: files
+              are addressed by content, and tags describe what each file <em>is</em> rather than
+              where it lives.
+            </p>
+            <p>The same photo, two storage models:</p>
+            <CodeBlock language="plain">
+{`POSIX                                        TagFS
+─────                                        ─────
+
+/                                            content://7f3a..bd29
+└── home/                                          │
+    └── sasha/                                     ├── tag: kind=photo
+        └── photos/                                ├── tag: year=2024
+            └── 2024/                              ├── tag: season=summer
+                └── summer/                        ├── tag: subject=family
+                    └── IMG_001.jpg                └── tag: owner=sasha
+
+  one path. one place.                       one blob. many descriptions.
+  rename → broken links.                     deduped automatically.
+  organise = move files.                     organise = add tags.`}
+            </CodeBlock>
+            <p>
+              In TagFS, two programs that store the same bytes share storage transparently. There
+              are no "missing parents" — the file is reachable through any subset of its tags. Renaming
+              is just adding or removing a tag.
+            </p>
+          </Section>
+
+          <Section id="use" tag="draft" title="use — switching context">
+            <p>
+              The shell's <code>use</code> command switches the active context for subsequent commands
+              — which Deck reads and writes go to, which set of tags is in scope, which Cabin a launch
+              attaches to. It plays the role of <code>cd</code>, but the thing being changed is a graph
+              vertex, not a tree node.
+            </p>
+            <CodeBlock language="shell">
+{`# attach to a Deck and start operating on a tag context
+use deck:photos
+use tag:year=2024 tag:season=summer
+
+# from now on, listing files defaults to the current selection
+ls
+# IMG_001.jpg  IMG_044.jpg  trail.svg  ...
+
+# the prompt reflects the active context
+[photos | 2024+summer] _`}
+            </CodeBlock>
+            <p>
+              Because the system has no global filesystem namespace, <code>use</code> is the only path
+              into persistence. A program with no Deck capability cannot inherit one — it must be
+              granted explicitly by its parent Cabin's Manifest.
             </p>
           </Section>
 

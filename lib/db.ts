@@ -100,12 +100,61 @@ const DDL: string[] = [
      FOREIGN KEY (author_id) REFERENCES users(id)
    )`,
   `CREATE INDEX IF NOT EXISTS idx_posts_thread ON forum_posts(thread_id, created_at ASC)`,
+
+  /* phase 2 — avatars, ranks, banning, comments, reactions, hall of fame */
+  `CREATE TABLE IF NOT EXISTS blog_comments (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     post_id INTEGER NOT NULL,
+     author_id INTEGER NOT NULL,
+     body TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     FOREIGN KEY (post_id) REFERENCES blog_posts(id) ON DELETE CASCADE,
+     FOREIGN KEY (author_id) REFERENCES users(id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_blog_comments_post ON blog_comments(post_id, created_at ASC)`,
+  `CREATE TABLE IF NOT EXISTS blog_reactions (
+     post_id INTEGER NOT NULL,
+     user_id INTEGER NOT NULL,
+     kind TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     PRIMARY KEY (post_id, user_id, kind)
+   )`,
+  `CREATE TABLE IF NOT EXISTS hof_moments (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     title TEXT NOT NULL,
+     body TEXT NOT NULL,
+     photo_data TEXT,
+     occurred_at INTEGER NOT NULL,
+     created_at INTEGER NOT NULL,
+     author_id INTEGER NOT NULL,
+     FOREIGN KEY (author_id) REFERENCES users(id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_hof_when ON hof_moments(occurred_at DESC)`,
+];
+
+const ADD_COLUMNS: { table: string; column: string; def: string }[] = [
+  { table: "users", column: "avatar_data", def: "TEXT" },
+  { table: "users", column: "custom_rank", def: "TEXT" },
+  { table: "users", column: "banned_at",   def: "INTEGER" },
 ];
 
 async function migrate() {
   const c = db();
   for (const stmt of DDL) {
     await c.execute(stmt);
+  }
+  for (const m of ADD_COLUMNS) {
+    const cols = (await c.execute({
+      sql: `SELECT name FROM pragma_table_info(?)`,
+      args: [m.table],
+    })).rows as unknown as { name: string }[];
+    if (!cols.some((r) => r.name === m.column)) {
+      try {
+        await c.execute(`ALTER TABLE ${m.table} ADD COLUMN ${m.column} ${m.def}`);
+      } catch {
+        /* race-safe: a parallel instance ran the same ALTER first */
+      }
+    }
   }
 }
 

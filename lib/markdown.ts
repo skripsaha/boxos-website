@@ -13,8 +13,25 @@ function esc(s: string): string {
     .replaceAll('"', "&quot;");
 }
 
+function isSafeImageUrl(u: string): boolean {
+  return /^https?:\/\//.test(u) || u.startsWith("/") || /^data:image\/(png|jpe?g|gif|webp);base64,/.test(u);
+}
+
 function renderInline(s: string): string {
-  let out = esc(s);
+  /* image markdown is processed *before* HTML escaping so the data URL passes through intact */
+  const placeholders: string[] = [];
+  let pre = s.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, u) => {
+    const safe = isSafeImageUrl(u) ? u : "";
+    if (!safe) return "";
+    const altEsc = String(alt).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+    const html = `<img src="${safe}" alt="${altEsc}" loading="lazy" style="max-width:100%; height:auto; border-radius:8px; border:1px solid var(--color-line-2); margin: 0.6em 0;"/>`;
+    placeholders.push(html);
+    return `IMG${placeholders.length - 1}`;
+  });
+
+  let out = esc(pre);
+  out = out.replace(/IMG(\d+)/g, (_m, idx) => placeholders[Number(idx)]);
+
   out = out.replace(/`([^`]+)`/g, (_m, c) => `<code>${c}</code>`);
   out = out.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
   out = out.replace(/(^|[\s(])\*([^*]+)\*(?=[\s).,!?:;]|$)/g, "$1<em>$2</em>");

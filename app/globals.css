@@ -457,3 +457,153 @@ body { font-size: 15px; line-height: 1.55; letter-spacing: -0.005em; }
 *::-webkit-scrollbar { width: 8px; height: 8px; }
 *::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 4px; }
 *::-webkit-scrollbar-thumb:hover { background: var(--color-ink-4); }
+
+/* ────────────────────────────────────────────
+   rank badges
+   ──────────────────────────────────────────── */
+.rank {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid;
+  white-space: nowrap;
+  vertical-align: 2px;
+}
+.rank--xs { font-size: 10px; padding: 1px 6px; }
+.rank--neutral {
+  background: var(--color-paper-2); border-color: var(--color-line); color: var(--color-ink-2);
+}
+.rank--warm {
+  background: var(--color-brand-soft);
+  border-color: color-mix(in oklch, var(--color-brand) 25%, transparent);
+  color: var(--color-brand-deep);
+}
+.dark .rank--warm { color: var(--color-brand); }
+.rank--deep {
+  background: color-mix(in oklch, var(--color-brand-deep) 14%, var(--color-paper));
+  border-color: color-mix(in oklch, var(--color-brand-deep) 40%, transparent);
+  color: var(--color-brand-deep);
+}
+.dark .rank--deep { color: var(--color-brand); }
+.rank--creator {
+  background: var(--color-ink); color: var(--color-paper); border-color: var(--color-ink);
+}
+.dark .rank--creator {
+  background: var(--color-paper); color: var(--color-ink); border-color: var(--color-paper);
+}
+.rank--danger {
+  background: color-mix(in oklch, var(--color-danger) 12%, var(--color-paper));
+  border-color: color-mix(in oklch, var(--color-danger) 50%, transparent);
+  color: var(--color-danger);
+}
+
+/* ────────────────────────────────────────────
+   pixel editor
+   ──────────────────────────────────────────── */
+.pixel-grid {
+  display: grid;
+  background: #fff;
+  border: 1px solid var(--color-line);
+  user-select: none;
+  touch-action: none;
+}
+.pixel-cell {
+  cursor: crosshair;
+  outline: 0.5px solid rgba(14,13,11,0.05);
+}
+.pixel-cell:hover {
+  outline: 1px solid rgba(184, 129, 75, 0.6);
+}
+.pixel-swatch {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 80ms ease, border-color 80ms ease;
+}
+.pixel-swatch[data-active="true"] {
+  border-color: var(--color-ink);
+  transform: scale(1.08);
+}
+
+/* ────────────────────────────────────────────
+   hall of fame timeline
+   ──────────────────────────────────────────── */
+.hof-rail {
+  position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 32px 0 36px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.hof-track {
+  position: relative;
+  display: flex;
+  gap: 28px;
+  min-width: max-content;
+  padding: 0 32px;
+}
+.hof-line {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--color-line) 6%, var(--color-line) 94%, transparent);
+  z-index: 0;
+}
+.hof-card {
+  position: relative;
+  z-index: 1;
+  width: 320px;
+  flex-shrink: 0;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  scroll-snap-align: start;
+  overflow: hidden;
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+.hof-card:hover { border-color: var(--color-ink-4); }
+.hof-card--top { transform: translateY(-30px); }
+.hof-card--bot { transform: translateY(30px); }
+.hof-tick {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 9px; height: 9px;
+  border-radius: 999px;
+  background: var(--color-brand);
+  border: 2px solid var(--color-paper);
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ────────────────────────────────────────────
+   reaction chips
+   ──────────────────────────────────────────── */
+.reaction {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  font-size: 12.5px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  color: var(--color-ink-2);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.reaction:hover { background: var(--color-paper-2); border-color: var(--color-ink-4); }
+.reaction[data-active="true"] {
+  background: var(--color-brand-soft);
+  border-color: color-mix(in oklch, var(--color-brand) 35%, transparent);
+  color: var(--color-brand-deep);
+}
+.dark .reaction[data-active="true"] { color: var(--color-brand); }
+.reaction-count { font-family: var(--font-mono); font-size: 11px; opacity: 0.7; }

@@ -12,6 +12,7 @@ const links = [
   { href: "/download", label: "Download" },
   { href: "/docs", label: "Docs" },
   { href: "/changelog", label: "Changelog" },
+  { href: "/hof", label: "Hall of Fame" },
   { href: "/blog", label: "Blog" },
   { href: "/forum", label: "Forum" },
 ];

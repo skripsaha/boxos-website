@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { one, many } from "@/lib/db";
 import { formatDate, renderMarkdown, timeAgo } from "@/lib/markdown";
 import { getCurrentUser } from "@/lib/auth";
+import { Avatar } from "@/components/Avatar";
+import { RankBadge } from "@/components/RankBadge";
 import { ReplyForm } from "./reply";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,11 @@ type PostRow = {
   created_at: number;
   author_name: string;
   author_id: number;
+  author_avatar: string | null;
+  author_created: number;
+  author_admin: 0 | 1;
+  author_custom_rank: string | null;
+  author_banned_at: number | null;
 };
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -49,13 +56,16 @@ export default async function ThreadPage({ params }: { params: Promise<{ id: str
   if (!thread) notFound();
 
   const posts = await many<PostRow>(
-    `SELECT p.id, p.body, p.created_at, p.author_id, u.username AS author_name
+    `SELECT p.id, p.body, p.created_at, p.author_id,
+            u.username AS author_name, u.avatar_data AS author_avatar,
+            u.created_at AS author_created, u.is_admin AS author_admin,
+            u.custom_rank AS author_custom_rank, u.banned_at AS author_banned_at
      FROM forum_posts p JOIN users u ON u.id = p.author_id
      WHERE p.thread_id = ? ORDER BY p.created_at ASC`,
     [tid]
   );
 
-  const user = await getCurrentUser();
+  const me = await getCurrentUser();
 
   return (
     <section className="container-narrow py-16 md:py-24">
@@ -77,11 +87,14 @@ export default async function ThreadPage({ params }: { params: Promise<{ id: str
       <ol className="mt-12 space-y-10">
         {posts.map((p, idx) => (
           <li key={p.id} className="flex gap-4 md:gap-6">
-            <Avatar name={p.author_name} idx={idx} />
+            <Link href={`/u/${p.author_name}`} className="flex-shrink-0">
+              <Avatar username={p.author_name} avatarData={p.author_avatar} size={40} />
+            </Link>
             <article className="flex-1 min-w-0">
               <header className="flex items-baseline justify-between gap-3 mb-3">
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="text-[15px] font-medium tracking-tight">{p.author_name}</span>
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <Link href={`/u/${p.author_name}`} className="text-[15px] font-medium tracking-tight">{p.author_name}</Link>
+                  <RankBadge createdAt={p.author_created} isAdmin={p.author_admin} customRank={p.author_custom_rank} bannedAt={p.author_banned_at} size="xs" />
                   {idx === 0 && <span className="text-[11px] tabular font-mono text-[color:var(--color-brand-deep)]">op</span>}
                 </div>
                 <span className="text-[11px] tabular font-mono text-[color:var(--color-ink-3)]">
@@ -95,7 +108,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ id: str
       </ol>
 
       <div className="mt-20 pt-12 border-t hairline">
-        {user ? (
+        {me ? (
           <ReplyForm threadId={tid} />
         ) : (
           <div className="surface rounded-[12px] p-8 text-center">
@@ -109,19 +122,5 @@ export default async function ThreadPage({ params }: { params: Promise<{ id: str
         )}
       </div>
     </section>
-  );
-}
-
-function Avatar({ name, idx }: { name: string; idx: number }) {
-  const tones = ["#B8814B", "#6B4220", "#9D6B3A", "#C0592C", "#4A2C12"];
-  const bg = tones[idx % tones.length];
-  return (
-    <div
-      className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white text-[13px] font-medium tabular select-none"
-      style={{ background: bg }}
-      aria-hidden
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
   );
 }

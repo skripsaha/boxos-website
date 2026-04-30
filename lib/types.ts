@@ -6,9 +6,41 @@ export type User = {
   is_admin: 0 | 1;
   bio: string | null;
   created_at: number;
+  avatar_data: string | null;
+  custom_rank: string | null;
+  banned_at: number | null;
 };
 
 export type SessionUser = Omit<User, "password_hash">;
+
+export type Rank =
+  | "creator"
+  | "newbie"
+  | "regular"
+  | "settled"
+  | "veteran"
+  | "oldschool"
+  | "grandpa"
+  | "banned";
+
+export type HofMoment = {
+  id: number;
+  title: string;
+  body: string;
+  photo_data: string | null;
+  occurred_at: number;
+  created_at: number;
+  author_id: number;
+};
+
+export type BlogComment = {
+  id: number;
+  post_id: number;
+  author_id: number;
+  author_name: string;
+  body: string;
+  created_at: number;
+};
 
 export type BlogPost = {
   id: number;
