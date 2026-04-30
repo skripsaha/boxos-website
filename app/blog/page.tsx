@@ -20,11 +20,16 @@ export default async function BlogIndex() {
   const rest = posts.slice(1);
 
   return (
-    <section className="container-x py-20 md:py-28">
+    <section className="relative">
+      <div className="absolute inset-x-0 top-0 h-[400px] overflow-hidden pointer-events-none">
+        <div className="page-mesh" />
+        <div className="page-grid" />
+      </div>
+      <div className="container-x relative py-20 md:py-28">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <h1 className="display text-[clamp(40px,6vw,76px)]">
-            Notes from the kernel.
+            Notes from the <em>kernel</em>.
           </h1>
           <p className="prose-body mt-5 max-w-[58ch]">
             Design decisions, post-mortems, weeknotes on building BoxOS in the open.
@@ -81,6 +86,7 @@ export default async function BlogIndex() {
           )}
         </>
       )}
+      </div>
     </section>
   );
 }

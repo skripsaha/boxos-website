@@ -7,6 +7,7 @@ export default function HomePage() {
     <>
       <Hero />
       <Primitives />
+      <Aphorism />
       <Lanes />
     </>
   );
@@ -16,6 +17,7 @@ function Hero() {
   return (
     <section className="relative overflow-hidden border-b hairline">
       <div className="hero-mesh" aria-hidden />
+      <div className="hero-grid" aria-hidden />
       <div className="container-x relative pt-24 pb-28 md:pt-36 md:pb-40">
         <h1 className="rise rise-1 display text-[clamp(52px,9vw,128px)] max-w-[14ch]">
           A kernel, written from <em>scratch</em>.
@@ -48,7 +50,7 @@ function Primitives() {
     { name: "Deck",     role: "storage",      blurb: "Content-addressed persistence, organised through TagFS — not a file tree." },
   ];
   return (
-    <section className="container-x py-28 md:py-36">
+    <section className="relative container-x py-28 md:py-36">
       <div className="max-w-2xl">
         <h2 className="display text-[clamp(34px,5.4vw,64px)]">
           Four primitives. <em>One</em> system.
@@ -74,6 +76,22 @@ function Primitives() {
         <Link href="/architecture" className="btn-link text-sm font-medium">
           Read the architecture overview &nbsp;→
         </Link>
+      </div>
+    </section>
+  );
+}
+
+function Aphorism() {
+  return (
+    <section className="border-t hairline relative overflow-hidden">
+      <div className="page-mesh" aria-hidden />
+      <div className="container-narrow relative py-28 md:py-36 text-center">
+        <p className="text-[clamp(28px,3.6vw,42px)] leading-[1.22] tracking-tight">
+          Most kernels grow inwards until the model collapses into convention.
+          <em className="font-serif italic font-normal text-[color:var(--color-brand-deep)]">
+            {" "}BoxOS keeps its surface small.
+          </em>
+        </p>
       </div>
     </section>
   );

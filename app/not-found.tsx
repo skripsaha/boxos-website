@@ -8,7 +8,7 @@ export default function NotFound() {
         <Logo size={96} />
       </div>
       <h1 className="display text-[clamp(36px,5.6vw,64px)]">
-        Not in the box.
+        Not in the <em>box</em>.
       </h1>
       <p className="prose-body mt-6">
         Try the documentation, the blog, or the forum.

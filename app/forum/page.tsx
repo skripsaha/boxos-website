@@ -40,10 +40,17 @@ export default async function ForumIndex() {
   `);
 
   return (
-    <section className="container-x py-20 md:py-28">
+    <section className="relative">
+      <div className="absolute inset-x-0 top-0 h-[420px] overflow-hidden pointer-events-none">
+        <div className="page-mesh" />
+        <div className="page-grid" />
+      </div>
+      <div className="container-x relative py-20 md:py-28">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <h1 className="display text-[clamp(40px,6vw,76px)]">Forum</h1>
+          <h1 className="display text-[clamp(40px,6vw,76px)]">
+            The <em>forum</em>.
+          </h1>
           <p className="prose-body mt-5 max-w-[58ch]">
             Discuss design, report bugs, share patches, ask questions. The slow-tempo channel —
             long-form replies are welcome here.
@@ -111,6 +118,7 @@ export default async function ForumIndex() {
           </ul>
         </div>
       )}
+      </div>
     </section>
   );
 }

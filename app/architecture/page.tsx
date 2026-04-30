@@ -6,14 +6,17 @@ export const metadata = { title: "Architecture" };
 export default function ArchitecturePage() {
   return (
     <article>
-      <header className="border-b hairline">
-        <div className="container-x py-20 md:py-28">
+      <header className="relative overflow-hidden border-b hairline">
+        <div className="page-mesh" aria-hidden />
+        <div className="page-grid" aria-hidden />
+        <div className="container-x relative py-20 md:py-28">
           <h1 className="display text-[clamp(40px,6vw,76px)] max-w-[18ch]">
-            How BoxOS is shaped.
+            How BoxOS is <em>shaped</em>.
           </h1>
           <p className="prose-body mt-6 max-w-[60ch]">
-            This page is a structural overview of the kernel. It is intentionally short:
-            the deep details live in the source tree and the documentation.
+            A short structural overview of the kernel — the idea behind the four primitives, the
+            shape of the runtime, what programs actually look like. The deep detail lives in the
+            source tree and the documentation.
           </p>
         </div>
       </header>
@@ -82,19 +85,20 @@ int main(void) {
 {`boxos/
 ├── src/
 │   ├── kernel/
-│   │   ├── arch/        # x86_64 entry, idt, paging, apic, msr
-│   │   ├── core/        # scheduler, vmm, pocket, manifest, security
-│   │   ├── drivers/     # pcie, ahci, framebuffer, keyboard
-│   │   ├── tagfs/       # content-addressed storage, decks
+│   │   ├── arch/      # x86_64-specific entry, paging, interrupts
+│   │   ├── core/      # scheduler, vmm, pocket fabric, manifest
+│   │   ├── drivers/   # pcie, ahci, framebuffer, keyboard
+│   │   ├── tagfs/     # content-addressed storage
 │   │   └── main.c
 │   ├── userspace/
-│   │   ├── apps/        # bench, chain, decks, ...
-│   │   ├── boxlib/      # user-side runtime + headers
-│   │   ├── shell/       # the interactive shell
-│   │   └── utils/       # small commands (say, show, ...)
-│   └── include/         # shared kernel/userspace ABI headers
-├── tools/               # qemu wrappers, build helpers
-└── build/               # produced by \`make\``}
+│   │   ├── apps/      # bench, chain, decks, ...
+│   │   ├── boxlib/    # user-side runtime + headers
+│   │   ├── shell/     # the interactive shell
+│   │   └── utils/     # small commands (say, show, ...)
+│   └── include/       # shared kernel/userspace ABI headers
+├── tools/             # qemu wrappers, build helpers
+├── build/             # produced by \`make\` (gitignored)
+└── Makefile`}
         </CodeBlock>
 
         <h2>Read more</h2>

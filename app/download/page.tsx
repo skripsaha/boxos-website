@@ -51,10 +51,12 @@ export default async function DownloadPage() {
   const release = await getLatestRelease();
   return (
     <article>
-      <header className="border-b hairline">
-        <div className="container-x py-20 md:py-28">
+      <header className="relative overflow-hidden border-b hairline">
+        <div className="page-mesh" aria-hidden />
+        <div className="page-grid" aria-hidden />
+        <div className="container-x relative py-20 md:py-28">
           <h1 className="display text-[clamp(40px,6vw,76px)] max-w-[16ch]">
-            Get the build.
+            Get the <em>build</em>.
           </h1>
           <p className="prose-body mt-6 max-w-[58ch]">
             BoxOS will publish bootable images, the UEFI loader and the kernel binary

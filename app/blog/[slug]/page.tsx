@@ -38,8 +38,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   return (
     <article>
-      <header className="border-b hairline">
-        <div className="container-narrow py-20 md:py-28">
+      <header className="relative overflow-hidden border-b hairline">
+        <div className="page-mesh" aria-hidden />
+        <div className="page-grid" aria-hidden />
+        <div className="container-narrow relative py-20 md:py-28">
           <Link href="/blog" className="text-sm text-[color:var(--color-ink-2)] hover:text-[color:var(--color-ink)] inline-flex items-center gap-1">
             <span className="text-[color:var(--color-ink-3)]">←</span> All posts
           </Link>
