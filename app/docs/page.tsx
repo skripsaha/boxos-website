@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/Code";
+import { TagFsDiagram } from "@/components/TagFsDiagram";
 
 export const metadata = { title: "Documentation" };
 
@@ -99,13 +100,14 @@ export default function DocsPage() {
             <p>
               Every kernel operation a Cabin can invoke is described as a row in the
               <strong> Manifest</strong>: name, register signature, side-effect descriptor,
-              capability requirements. Programs do not invoke system calls by number;{" "}
-              <code>boxlib</code> resolves them at link time against the Manifest.
+              capability requirements. Programs do not invoke kernel operations by number — they
+              use the <code>notify</code> mechanism, and <code>boxlib</code> resolves the row at
+              link time against the Manifest.
             </p>
             <p>
               Sandboxing is a property of the table, not a permission bit. A Manifest that lists
               no <code>deck.*</code> rows produces a process that <em>literally cannot</em> speak
-              to storage — there is no syscall to call.
+              to storage — there is no <code>notify</code> for it to send.
             </p>
           </Section>
 
@@ -129,23 +131,7 @@ export default function DocsPage() {
               are addressed by content, and tags describe what each file <em>is</em> rather than
               where it lives.
             </p>
-            <p>The same photo, two storage models:</p>
-            <CodeBlock language="plain">
-{`POSIX                                        TagFS
-─────                                        ─────
-
-/                                            content://7f3a..bd29
-└── home/                                          │
-    └── sasha/                                     ├── tag: kind=photo
-        └── photos/                                ├── tag: year=2024
-            └── 2024/                              ├── tag: season=summer
-                └── summer/                        ├── tag: subject=family
-                    └── IMG_001.jpg                └── tag: owner=sasha
-
-  one path. one place.                       one blob. many descriptions.
-  rename → broken links.                     deduped automatically.
-  organise = move files.                     organise = add tags.`}
-            </CodeBlock>
+            <TagFsDiagram />
             <p>
               In TagFS, two programs that store the same bytes share storage transparently. There
               are no "missing parents" — the file is reachable through any subset of its tags. Renaming

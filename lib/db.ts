@@ -130,6 +130,18 @@ const DDL: string[] = [
      FOREIGN KEY (author_id) REFERENCES users(id)
    )`,
   `CREATE INDEX IF NOT EXISTS idx_hof_when ON hof_moments(occurred_at DESC)`,
+
+  /* phase 3 — gallery of BoxOS screenshots */
+  `CREATE TABLE IF NOT EXISTS gallery_items (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     title TEXT NOT NULL,
+     caption TEXT,
+     image_data TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     author_id INTEGER NOT NULL,
+     FOREIGN KEY (author_id) REFERENCES users(id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_gallery_when ON gallery_items(created_at DESC)`,
 ];
 
 const ADD_COLUMNS: { table: string; column: string; def: string }[] = [
@@ -166,7 +178,7 @@ async function seedCategoriesIfEmpty() {
 
   const data: [string, string, string, number][] = [
     ["announcements", "Announcements", "Releases, breaking changes, project news.", 0],
-    ["kernel", "Kernel internals", "Scheduler, memory, AMP, IPC, syscalls — anything below the user boundary.", 1],
+    ["kernel", "Kernel internals", "Scheduler, memory, AMP, IPC, notify — anything below the user boundary.", 1],
     ["userland", "Userland & boxlib", "Programs, shells, utilities, language ports.", 2],
     ["filesystem", "Storage & TagFS", "DiskBook, content addressing, manifests, persistence.", 3],
     ["porting", "Porting & hardware", "PCIe, drivers, ACPI, virtualization, real-iron reports.", 4],

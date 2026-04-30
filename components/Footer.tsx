@@ -17,7 +17,7 @@ const cols = [
     items: [
       { label: "Cabin (process)", href: "/docs#cabin" },
       { label: "Pocket (IPC)", href: "/docs#pocket" },
-      { label: "Manifest (syscalls)", href: "/docs#manifest" },
+      { label: "Manifest (notify)", href: "/docs#manifest" },
       { label: "Deck (storage)", href: "/docs#deck" },
     ],
   },

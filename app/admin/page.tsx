@@ -24,7 +24,7 @@ export default async function AdminPage() {
     );
   }
 
-  const [users, posts, threads, hof] = await Promise.all([
+  const [users, posts, threads, hof, gallery] = await Promise.all([
     many<{
       id: number; username: string; created_at: number; is_admin: 0 | 1;
       avatar_data: string | null; custom_rank: string | null; banned_at: number | null;
@@ -47,6 +47,9 @@ export default async function AdminPage() {
     `),
     many<{ id: number; title: string; occurred_at: number }>(`
       SELECT id, title, occurred_at FROM hof_moments ORDER BY occurred_at DESC LIMIT 30
+    `),
+    many<{ id: number; title: string; created_at: number }>(`
+      SELECT id, title, created_at FROM gallery_items ORDER BY created_at DESC LIMIT 30
     `),
   ]);
 
@@ -171,6 +174,30 @@ export default async function AdminPage() {
                       </p>
                     </div>
                     <ContentActions kind="hof" id={m.id} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="mt-16">
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-[20px] font-medium tracking-tight">Gallery</p>
+            <Link href="/gallery/new" className="btn btn-primary">Upload snapshot</Link>
+          </div>
+          {gallery.length === 0 ? (
+            <p className="prose-body text-sm">No snapshots yet.</p>
+          ) : (
+            <ul className="surface rounded-[14px] overflow-hidden">
+              {gallery.map((g, idx) => (
+                <li key={g.id} className={idx > 0 ? "border-t hairline-2" : ""}>
+                  <div className="flex items-center gap-3 px-5 py-3">
+                    <div className="flex-1 min-w-0">
+                      <Link href="/gallery" className="text-[14px] font-medium tracking-tight truncate block">{g.title}</Link>
+                      <p className="text-[11px] tabular font-mono text-[color:var(--color-ink-3)] mt-1">{formatDate(g.created_at)}</p>
+                    </div>
+                    <ContentActions kind="gallery" id={g.id} />
                   </div>
                 </li>
               ))}

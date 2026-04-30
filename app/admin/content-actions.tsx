@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
-type Kind = "blog" | "thread" | "hof" | "forum-post";
+type Kind = "blog" | "thread" | "hof" | "forum-post" | "gallery";
 
 export function ContentActions({ kind, id }: { kind: Kind; id: number }) {
   const router = useRouter();
@@ -15,11 +15,15 @@ export function ContentActions({ kind, id }: { kind: Kind; id: number }) {
       thread: "thread (and all its replies)",
       "forum-post": "forum reply",
       hof: "hall-of-fame moment",
+      gallery: "gallery item",
     };
     if (!confirm(`Delete this ${labels[kind]}? This cannot be undone.`)) return;
     setPending(true);
     try {
-      const path = kind === "hof" ? `/api/hof/${id}` : `/api/admin/${kind === "thread" ? "threads" : kind === "forum-post" ? "forum-posts" : "blog"}/${id}`;
+      const path =
+        kind === "hof" ? `/api/hof/${id}` :
+        kind === "gallery" ? `/api/gallery/${id}` :
+        `/api/admin/${kind === "thread" ? "threads" : kind === "forum-post" ? "forum-posts" : "blog"}/${id}`;
       const res = await fetch(path, { method: "DELETE" });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));

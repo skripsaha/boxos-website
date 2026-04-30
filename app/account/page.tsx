@@ -67,6 +67,12 @@ export default async function AccountPage() {
             <p className="mt-2 text-sm text-[color:var(--color-ink-2)]">Pin a moment to the timeline.</p>
           </Link>
         ) : null}
+        {user.is_admin ? (
+          <Link href="/gallery/new" className="card p-6">
+            <p className="text-[16px] font-medium tracking-tight">Upload to gallery</p>
+            <p className="mt-2 text-sm text-[color:var(--color-ink-2)]">Drop a snapshot of BoxOS in motion.</p>
+          </Link>
+        ) : null}
       </div>
 
       <div className="mt-12 pt-8 border-t hairline">

@@ -41,7 +41,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body>
-        <Nav user={user ? { id: user.id, username: user.username, isAdmin: !!user.is_admin } : null} />
+        <Nav user={user ? { id: user.id, username: user.username, isAdmin: !!user.is_admin, avatarData: user.avatar_data } : null} />
         <main>{children}</main>
         <Footer />
       </body>

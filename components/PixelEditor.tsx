@@ -159,7 +159,7 @@ export function PixelEditor({ initial, username }: Props) {
 
       <div className="flex flex-col">
         <p className="text-[14px] font-medium text-[color:var(--color-ink-2)]">Palette</p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2 items-center">
           {PALETTE.map((p) => (
             <button
               key={p}
@@ -176,7 +176,36 @@ export function PixelEditor({ initial, username }: Props) {
               }}
             />
           ))}
+          <label
+            className="pixel-swatch relative flex items-center justify-center"
+            data-active={!PALETTE.includes(color) && color !== TRANSPARENT}
+            title="custom color"
+            style={{
+              background:
+                !PALETTE.includes(color) && color !== TRANSPARENT
+                  ? color
+                  : "conic-gradient(from 0deg, #C0592C, #B8814B, #6B4220, #426A4F, #4A6FB1, #B65BA8, #C0592C)",
+              cursor: "pointer",
+            }}
+          >
+            <span className="text-[14px] font-bold text-white drop-shadow" aria-hidden>+</span>
+            <input
+              type="color"
+              value={!PALETTE.includes(color) && color !== TRANSPARENT ? color : "#B8814B"}
+              onChange={(e) => setColor(e.target.value)}
+              style={{
+                position: "absolute",
+                inset: 0,
+                opacity: 0,
+                cursor: "pointer",
+              }}
+              aria-label="pick a custom color"
+            />
+          </label>
         </div>
+        <p className="mt-2 text-[11px] tabular font-mono text-[color:var(--color-ink-3)]">
+          Click <span className="font-bold text-[color:var(--color-ink-2)]">+</span> for any colour you like.
+        </p>
 
         <p className="mt-8 text-[14px] font-medium text-[color:var(--color-ink-2)]">Tools</p>
         <div className="mt-3 flex flex-wrap gap-3">

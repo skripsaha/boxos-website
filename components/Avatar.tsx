@@ -15,7 +15,13 @@ function colorFor(name: string): string {
   return TONES[Math.abs(h) % TONES.length];
 }
 
+function radiusFor(size: number): number {
+  /* proportional rounded square — 18% of size, clamped */
+  return Math.max(5, Math.min(16, Math.round(size * 0.18)));
+}
+
 export function Avatar({ username, avatarData, size = 36, className }: Props) {
+  const radius = radiusFor(size);
   if (avatarData) {
     return (
       /* eslint-disable-next-line @next/next/no-img-element */
@@ -28,7 +34,7 @@ export function Avatar({ username, avatarData, size = 36, className }: Props) {
         style={{
           width: size,
           height: size,
-          borderRadius: size > 64 ? 12 : 999,
+          borderRadius: radius,
           imageRendering: "pixelated",
           objectFit: "cover",
           flexShrink: 0,
@@ -47,7 +53,7 @@ export function Avatar({ username, avatarData, size = 36, className }: Props) {
         width: size,
         height: size,
         background: bg,
-        borderRadius: size > 64 ? 12 : 999,
+        borderRadius: radius,
         fontSize,
       }}
       aria-hidden="true"

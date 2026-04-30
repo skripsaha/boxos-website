@@ -4,8 +4,14 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Wordmark } from "./Wordmark";
+import { Avatar } from "./Avatar";
 
-type SessionUser = { id: number; username: string; isAdmin: boolean } | null;
+type SessionUser = {
+  id: number;
+  username: string;
+  isAdmin: boolean;
+  avatarData: string | null;
+} | null;
 
 const links = [
   { href: "/architecture", label: "Architecture" },
@@ -13,6 +19,7 @@ const links = [
   { href: "/docs", label: "Docs" },
   { href: "/changelog", label: "Changelog" },
   { href: "/hof", label: "Hall of Fame" },
+  { href: "/gallery", label: "Gallery" },
   { href: "/blog", label: "Blog" },
   { href: "/forum", label: "Forum" },
 ];
@@ -72,7 +79,8 @@ export function Nav({ user }: { user: SessionUser }) {
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <>
-              <Link href="/account" className="nav-link tabular">
+              <Link href="/account" className="nav-link tabular flex items-center gap-2">
+                <Avatar username={user.username} avatarData={user.avatarData} size={26} />
                 {user.username}
               </Link>
               <Link href="/forum/new" className="btn btn-ghost">New thread</Link>
@@ -128,7 +136,10 @@ export function Nav({ user }: { user: SessionUser }) {
             <div className="mt-3 pt-3 border-t border-[color:var(--color-line)] flex items-center gap-3">
               {user ? (
                 <>
-                  <Link href="/account" className="btn btn-ghost flex-1">{user.username}</Link>
+                  <Link href="/account" className="btn btn-ghost flex-1 inline-flex items-center justify-center gap-2">
+                    <Avatar username={user.username} avatarData={user.avatarData} size={22} />
+                    {user.username}
+                  </Link>
                   <Link href="/forum/new" className="btn btn-primary flex-1">New thread</Link>
                 </>
               ) : (

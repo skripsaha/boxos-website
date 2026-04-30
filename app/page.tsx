@@ -1,13 +1,49 @@
 import Link from "next/link";
+import { many } from "@/lib/db";
+import { TagFsDiagram } from "@/components/TagFsDiagram";
+import { formatDate, timeAgo } from "@/lib/markdown";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+type GhCommit = {
+  sha: string;
+  html_url: string;
+  commit: { message: string; author: { date: string } };
+};
+
+const REPO = "skripsaha/boxos";
+
+async function getRecentCommits(): Promise<GhCommit[]> {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=5`, {
+      headers: { Accept: "application/vnd.github+json" },
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
+    return (await res.json()) as GhCommit[];
+  } catch { return []; }
+}
+
+export default async function HomePage() {
+  const [commits, hof, gallery] = await Promise.all([
+    getRecentCommits(),
+    many<{ id: number; title: string; occurred_at: number; photo_data: string | null }>(
+      "SELECT id, title, occurred_at, photo_data FROM hof_moments ORDER BY occurred_at DESC LIMIT 4"
+    ),
+    many<{ id: number; title: string; image_data: string }>(
+      "SELECT id, title, image_data FROM gallery_items ORDER BY created_at DESC LIMIT 4"
+    ),
+  ]);
+
   return (
     <>
       <Hero />
       <Primitives />
+      <TagFsTeaser />
       <Aphorism />
+      <Pulse commits={commits} />
+      {gallery.length > 0 && <GalleryStrip items={gallery} />}
+      {hof.length > 0 && <HofPreview items={hof} />}
       <Lanes />
     </>
   );
@@ -44,10 +80,10 @@ function Hero() {
 
 function Primitives() {
   const items = [
-    { name: "Cabin",    role: "process",      blurb: "An execution context with its own memory, capabilities and lifecycle." },
-    { name: "Pocket",   role: "channel",      blurb: "A typed, capability-bound message channel — the only IPC primitive." },
-    { name: "Manifest", role: "syscall ABI",  blurb: "A self-describing chain of operations the kernel knows how to run." },
-    { name: "Deck",     role: "storage",      blurb: "Content-addressed persistence, organised through TagFS — not a file tree." },
+    { name: "Cabin",    role: "process",     blurb: "An execution context with its own memory, capabilities and lifecycle." },
+    { name: "Pocket",   role: "channel",     blurb: "A typed, capability-bound message channel — the only IPC primitive." },
+    { name: "Manifest", role: "notify ABI",  blurb: "A self-describing chain of operations the kernel knows how to run." },
+    { name: "Deck",     role: "storage",     blurb: "Content-addressed persistence, organised through TagFS — not a file tree." },
   ];
   return (
     <section className="relative container-x py-28 md:py-36">
@@ -81,9 +117,38 @@ function Primitives() {
   );
 }
 
+function TagFsTeaser() {
+  return (
+    <section className="border-t border-b hairline bg-[color:var(--color-paper-2)]">
+      <div className="container-x py-24 md:py-32 grid lg:grid-cols-12 gap-12">
+        <div className="lg:col-span-5 lg:pt-6">
+          <h2 className="display text-[clamp(32px,4.6vw,56px)]">
+            Storage as a <em>graph</em>, not a tree.
+          </h2>
+          <p className="prose-body mt-6 max-w-[44ch]">
+            POSIX makes you choose one path per file. TagFS doesn't make you choose. The same
+            blob is reachable through any subset of its tags — and identical bytes are stored
+            once, regardless of who put them there.
+          </p>
+          <div className="mt-8">
+            <Link href="/docs#tagfs" className="btn-link text-sm font-medium">
+              How TagFS works &nbsp;→
+            </Link>
+          </div>
+        </div>
+        <div className="lg:col-span-7">
+          <div className="surface rounded-[14px] p-3 md:p-5 bg-[color:var(--color-paper)]">
+            <TagFsDiagram />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Aphorism() {
   return (
-    <section className="border-t hairline relative overflow-hidden">
+    <section className="border-b hairline relative overflow-hidden">
       <div className="page-mesh" aria-hidden />
       <div className="container-narrow relative py-28 md:py-36 text-center">
         <p className="text-[clamp(28px,3.6vw,42px)] leading-[1.22] tracking-tight">
@@ -93,6 +158,115 @@ function Aphorism() {
           </em>
         </p>
       </div>
+    </section>
+  );
+}
+
+function Pulse({ commits }: { commits: GhCommit[] }) {
+  if (commits.length === 0) return null;
+  return (
+    <section className="container-x py-24 md:py-28">
+      <div className="flex items-end justify-between gap-6 mb-10">
+        <div>
+          <h2 className="display text-[clamp(28px,3.8vw,44px)]">
+            The <em>pulse</em>.
+          </h2>
+          <p className="prose-body mt-4 max-w-[48ch]">
+            Live from the kernel's commit log. Whatever shipped last lands here.
+          </p>
+        </div>
+        <Link href="/changelog" className="btn-link text-sm font-medium hidden md:inline">
+          Full changelog &nbsp;→
+        </Link>
+      </div>
+      <ul className="surface rounded-[14px] overflow-hidden">
+        {commits.slice(0, 5).map((c, idx) => {
+          const subject = c.commit.message.split("\n")[0].trim();
+          return (
+            <li key={c.sha} className={idx > 0 ? "border-t hairline-2" : ""}>
+              <a href={c.html_url} target="_blank" rel="noreferrer" className="grid grid-cols-12 gap-4 items-center px-5 py-4 hover:bg-[color:var(--color-paper-2)] transition-colors">
+                <span className="col-span-2 md:col-span-1 font-mono text-[11px] tabular text-[color:var(--color-ink-3)]">
+                  {c.sha.slice(0, 7)}
+                </span>
+                <p className="col-span-10 md:col-span-9 text-[14.5px] tracking-tight truncate">{subject}</p>
+                <span className="col-span-12 md:col-span-2 text-[11px] tabular font-mono text-[color:var(--color-ink-3)] md:text-right">
+                  {timeAgo(Math.floor(new Date(c.commit.author.date).getTime() / 1000))}
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+      <Link href="/changelog" className="mt-6 inline-block btn-link text-sm font-medium md:hidden">
+        Full changelog &nbsp;→
+      </Link>
+    </section>
+  );
+}
+
+function GalleryStrip({ items }: { items: { id: number; title: string; image_data: string }[] }) {
+  return (
+    <section className="border-t hairline bg-[color:var(--color-paper-2)]">
+      <div className="container-x py-24 md:py-28">
+        <div className="flex items-end justify-between gap-6 mb-10">
+          <div>
+            <h2 className="display text-[clamp(28px,3.8vw,44px)]">
+              From the <em>gallery</em>.
+            </h2>
+            <p className="prose-body mt-4 max-w-[48ch]">Snapshots of the kernel in motion.</p>
+          </div>
+          <Link href="/gallery" className="btn-link text-sm font-medium hidden md:inline">All snapshots &nbsp;→</Link>
+        </div>
+        <ul className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {items.map((g) => (
+            <li key={g.id}>
+              <Link href="/gallery" className="card p-0 overflow-hidden block group">
+                <div className="aspect-[4/3] bg-[color:var(--color-paper-2)] overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={g.image_data} alt={g.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]" />
+                </div>
+                <p className="px-4 py-3 text-[13.5px] font-medium tracking-tight truncate">{g.title}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function HofPreview({ items }: { items: { id: number; title: string; occurred_at: number; photo_data: string | null }[] }) {
+  return (
+    <section className="container-x py-24 md:py-28">
+      <div className="flex items-end justify-between gap-6 mb-10">
+        <div>
+          <h2 className="display text-[clamp(28px,3.8vw,44px)]">
+            Hall of <em>Fame</em>.
+          </h2>
+          <p className="prose-body mt-4 max-w-[48ch]">A few moments worth remembering.</p>
+        </div>
+        <Link href="/hof" className="btn-link text-sm font-medium hidden md:inline">Full timeline &nbsp;→</Link>
+      </div>
+      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {items.map((m) => (
+          <li key={m.id}>
+            <Link href="/hof" className="card overflow-hidden block group h-full">
+              {m.photo_data && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={m.photo_data} alt="" className="w-full aspect-[4/3] object-cover" />
+              )}
+              <div className="p-5">
+                <p className="text-[11px] tabular font-mono text-[color:var(--color-brand-deep)]">
+                  {formatDate(m.occurred_at)}
+                </p>
+                <p className="mt-2 text-[15.5px] font-medium tracking-tight leading-snug group-hover:text-[color:var(--color-brand-deep)] transition-colors">
+                  {m.title}
+                </p>
+              </div>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
