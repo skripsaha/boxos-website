@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
+import { one, many } from "@/lib/db";
 import { formatDate, readingMinutes, renderMarkdown } from "@/lib/markdown";
 import type { BlogPost } from "@/lib/types";
 
@@ -8,34 +8,33 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const post = db()
-    .prepare("SELECT title, excerpt FROM blog_posts WHERE slug = ?")
-    .get(slug) as { title: string; excerpt: string } | undefined;
+  const post = await one<{ title: string; excerpt: string }>(
+    "SELECT title, excerpt FROM blog_posts WHERE slug = ?",
+    [slug]
+  );
   if (!post) return { title: "Not found" };
   return { title: post.title, description: post.excerpt };
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const post = db()
-    .prepare(
-      `SELECT p.id, p.slug, p.title, p.excerpt, p.body, p.published_at, u.username AS author_name
-       FROM blog_posts p JOIN users u ON u.id = p.author_id
-       WHERE p.slug = ?`
-    )
-    .get(slug) as (Pick<BlogPost, "id" | "slug" | "title" | "excerpt" | "body" | "published_at" | "author_name">) | undefined;
+  const post = await one<Pick<BlogPost, "id" | "slug" | "title" | "excerpt" | "body" | "published_at" | "author_name">>(
+    `SELECT p.id, p.slug, p.title, p.excerpt, p.body, p.published_at, u.username AS author_name
+     FROM blog_posts p JOIN users u ON u.id = p.author_id
+     WHERE p.slug = ?`,
+    [slug]
+  );
 
   if (!post) notFound();
 
   const html = renderMarkdown(post.body);
   const reading = readingMinutes(post.body);
 
-  const others = db()
-    .prepare(
-      `SELECT p.id, p.slug, p.title, p.published_at FROM blog_posts p
-       WHERE p.id != ? ORDER BY p.published_at DESC LIMIT 3`
-    )
-    .all(post.id) as { id: number; slug: string; title: string; published_at: number }[];
+  const others = await many<{ id: number; slug: string; title: string; published_at: number }>(
+    `SELECT p.id, p.slug, p.title, p.published_at FROM blog_posts p
+     WHERE p.id != ? ORDER BY p.published_at DESC LIMIT 3`,
+    [post.id]
+  );
 
   return (
     <article>

@@ -1,32 +1,34 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
+import { one, many } from "@/lib/db";
 import { timeAgo } from "@/lib/markdown";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params;
-  const c = db().prepare("SELECT name FROM forum_categories WHERE slug = ?").get(category) as { name: string } | undefined;
+  const c = await one<{ name: string }>("SELECT name FROM forum_categories WHERE slug = ?", [category]);
   return { title: c ? c.name : "Category" };
 }
 
 export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params;
-  const cat = db().prepare("SELECT id, slug, name, description FROM forum_categories WHERE slug = ?").get(category) as
-    | { id: number; slug: string; name: string; description: string }
-    | undefined;
+  const cat = await one<{ id: number; slug: string; name: string; description: string }>(
+    "SELECT id, slug, name, description FROM forum_categories WHERE slug = ?",
+    [category]
+  );
   if (!cat) notFound();
 
-  const threads = db().prepare(`
-    SELECT t.id, t.title, t.created_at, t.last_post_at,
-           u.username AS author_name,
-           (SELECT COUNT(*) FROM forum_posts WHERE thread_id = t.id) AS post_count,
-           (SELECT u2.username FROM forum_posts p JOIN users u2 ON u2.id = p.author_id WHERE p.thread_id = t.id ORDER BY p.created_at DESC LIMIT 1) AS last_author
-    FROM forum_threads t JOIN users u ON u.id = t.author_id
-    WHERE t.category_id = ?
-    ORDER BY t.last_post_at DESC
-  `).all(cat.id) as { id: number; title: string; created_at: number; last_post_at: number; author_name: string; post_count: number; last_author: string | null }[];
+  const threads = await many<{ id: number; title: string; created_at: number; last_post_at: number; author_name: string; post_count: number; last_author: string | null }>(
+    `SELECT t.id, t.title, t.created_at, t.last_post_at,
+            u.username AS author_name,
+            (SELECT COUNT(*) FROM forum_posts WHERE thread_id = t.id) AS post_count,
+            (SELECT u2.username FROM forum_posts p JOIN users u2 ON u2.id = p.author_id WHERE p.thread_id = t.id ORDER BY p.created_at DESC LIMIT 1) AS last_author
+     FROM forum_threads t JOIN users u ON u.id = t.author_id
+     WHERE t.category_id = ?
+     ORDER BY t.last_post_at DESC`,
+    [cat.id]
+  );
 
   return (
     <section className="container-x py-20 md:py-28">

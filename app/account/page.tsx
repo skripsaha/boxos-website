@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { many } from "@/lib/db";
 import { formatDate, timeAgo } from "@/lib/markdown";
 import { LogoutButton } from "./logout";
 
@@ -11,21 +11,19 @@ export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const threads = db()
-    .prepare(
-      `SELECT t.id, t.title, t.last_post_at, c.name AS category_name
-       FROM forum_threads t JOIN forum_categories c ON c.id = t.category_id
-       WHERE t.author_id = ? ORDER BY t.created_at DESC LIMIT 20`
-    )
-    .all(user.id) as { id: number; title: string; last_post_at: number; category_name: string }[];
+  const threads = await many<{ id: number; title: string; last_post_at: number; category_name: string }>(
+    `SELECT t.id, t.title, t.last_post_at, c.name AS category_name
+     FROM forum_threads t JOIN forum_categories c ON c.id = t.category_id
+     WHERE t.author_id = ? ORDER BY t.created_at DESC LIMIT 20`,
+    [user.id]
+  );
 
-  const posts = db()
-    .prepare(
-      `SELECT p.id, p.body, p.created_at, t.id AS thread_id, t.title AS thread_title
-       FROM forum_posts p JOIN forum_threads t ON t.id = p.thread_id
-       WHERE p.author_id = ? ORDER BY p.created_at DESC LIMIT 20`
-    )
-    .all(user.id) as { id: number; body: string; created_at: number; thread_id: number; thread_title: string }[];
+  const posts = await many<{ id: number; body: string; created_at: number; thread_id: number; thread_title: string }>(
+    `SELECT p.id, p.body, p.created_at, t.id AS thread_id, t.title AS thread_title
+     FROM forum_posts p JOIN forum_threads t ON t.id = p.thread_id
+     WHERE p.author_id = ? ORDER BY p.created_at DESC LIMIT 20`,
+    [user.id]
+  );
 
   return (
     <section className="container-x py-20 md:py-28">

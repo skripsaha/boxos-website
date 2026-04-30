@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
-import { db, now } from "./db";
+import { one, run, now } from "./db";
 import { SESSION, signSession, verifySession } from "./session";
 import type { User, SessionUser } from "./types";
 
@@ -12,10 +12,20 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   if (!token) return null;
   const payload = await verifySession(token);
   if (!payload) return null;
-  const row = db()
-    .prepare("SELECT id, username, email, is_admin, bio, created_at FROM users WHERE id = ?")
-    .get(payload.uid) as Omit<User, "password_hash"> | undefined;
-  return row ?? null;
+  const row = await one<Omit<User, "password_hash">>(
+    "SELECT id, username, email, is_admin, bio, created_at FROM users WHERE id = ?",
+    [payload.uid]
+  );
+  if (!row) return null;
+  // libsql returns numeric columns as bigint sometimes; normalize.
+  return {
+    id: Number(row.id),
+    username: String(row.username),
+    email: row.email == null ? null : String(row.email),
+    is_admin: (Number(row.is_admin) ? 1 : 0) as 0 | 1,
+    bio: row.bio == null ? null : String(row.bio),
+    created_at: Number(row.created_at),
+  };
 }
 
 export async function requireUser(): Promise<SessionUser> {
@@ -52,19 +62,20 @@ export async function registerUser(input: RegisterInput): Promise<{ ok: true; us
   const email = input.email?.trim() || null;
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "Invalid email" };
 
-  const d = db();
-  const existing = d.prepare("SELECT id FROM users WHERE username = ? OR (email IS NOT NULL AND email = ?)").get(username, email);
+  const existing = await one<{ id: number }>(
+    "SELECT id FROM users WHERE username = ? OR (email IS NOT NULL AND ? IS NOT NULL AND email = ?)",
+    [username, email, email]
+  );
   if (existing) return { ok: false, error: "Username or email already taken" };
 
   const hash = await bcrypt.hash(input.password, 12);
   const adminUser = process.env.ADMIN_USERNAME;
   const isAdmin = adminUser && username === adminUser ? 1 : 0;
 
-  const result = d
-    .prepare(
-      "INSERT INTO users (username, email, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?)"
-    )
-    .run(username, email, hash, isAdmin, now());
+  const result = await run(
+    "INSERT INTO users (username, email, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?)",
+    [username, email, hash, isAdmin, now()]
+  );
 
   return { ok: true, userId: Number(result.lastInsertRowid) };
 }
@@ -72,11 +83,12 @@ export async function registerUser(input: RegisterInput): Promise<{ ok: true; us
 export async function authenticate(username: string, password: string): Promise<{ ok: true; userId: number } | { ok: false; error: string }> {
   const u = username.trim();
   if (!u || !password) return { ok: false, error: "Missing credentials" };
-  const row = db()
-    .prepare("SELECT id, password_hash FROM users WHERE username = ? OR email = ?")
-    .get(u, u) as { id: number; password_hash: string } | undefined;
+  const row = await one<{ id: number; password_hash: string }>(
+    "SELECT id, password_hash FROM users WHERE username = ? OR email = ?",
+    [u, u]
+  );
   if (!row) return { ok: false, error: "Invalid username or password" };
-  const ok = await bcrypt.compare(password, row.password_hash);
+  const ok = await bcrypt.compare(password, String(row.password_hash));
   if (!ok) return { ok: false, error: "Invalid username or password" };
-  return { ok: true, userId: row.id };
+  return { ok: true, userId: Number(row.id) };
 }

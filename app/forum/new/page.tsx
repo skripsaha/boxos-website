@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { many } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { NewThreadForm } from "./form";
 
@@ -13,9 +13,9 @@ export default async function NewThreadPage({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const { cat } = await searchParams;
-  const cats = db()
-    .prepare("SELECT id, slug, name FROM forum_categories ORDER BY position ASC")
-    .all() as { id: number; slug: string; name: string }[];
+  const cats = await many<{ id: number; slug: string; name: string }>(
+    "SELECT id, slug, name FROM forum_categories ORDER BY position ASC"
+  );
 
   return (
     <section className="container-narrow py-20 md:py-24">

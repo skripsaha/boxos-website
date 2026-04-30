@@ -6,7 +6,7 @@ Marketing site, blog, and forum for the BoxOS kernel project.
 
 - Next.js 15 (App Router) · React 19 · TypeScript
 - Tailwind CSS 4 (no config — `@theme` in `app/globals.css`)
-- SQLite via `better-sqlite3` (zero external services)
+- libSQL via `@libsql/client` — local file in dev, [Turso](https://turso.tech) in prod
 - JWT sessions via `jose`, bcrypt password hashing
 - Mona Sans · Instrument Serif · JetBrains Mono (loaded from Google Fonts)
 
@@ -44,38 +44,67 @@ npm start                      # serves on port 4000
 The site has no external dependencies. Drop the project on any host that can run
 Node 20+. Persist `data/boxos.db` across deploys — it holds users, posts, threads.
 
-### Deploy to Vercel
+### Deploy: Turso + Vercel (recommended)
 
-The repo is Vercel-ready out of the box.
+The repo is wired for Turso libSQL on Vercel. Total cost: **$0**. Persistent
+across deploys and cold starts. Five steps.
+
+**1. Create a Turso database** (once)
 
 ```sh
-npm i -g vercel        # one-time
-vercel login           # browser OAuth
-vercel                 # first deploy (preview)
-vercel --prod          # promote to production
+brew install tursodatabase/tap/turso        # or: curl -sSfL https://get.tur.so/install.sh | bash
+turso auth signup                            # browser OAuth (free)
+turso db create boxos                        # creates the DB
+turso db show boxos --url                    # → libsql://boxos-<org>.turso.io
+turso db tokens create boxos                 # → eyJ...long token
 ```
 
-During the first run, accept the defaults — Vercel auto-detects Next.js. Then in
-the dashboard (or via `vercel env add`) set:
+Save both values; you will paste them into Vercel.
 
-| Variable          | Value                                          |
-| ----------------- | ---------------------------------------------- |
-| `SESSION_SECRET`  | `openssl rand -base64 48`                      |
-| `ADMIN_USERNAME`  | your GitHub handle                             |
+**2. Push the repo to Vercel**
 
-`DB_PATH` is auto-set to `/tmp/boxos.db` when `VERCEL=1` — no action needed.
+```sh
+npm i -g vercel
+vercel login                                 # browser OAuth
+vercel                                       # accept defaults, first deploy goes to a preview URL
+```
 
-**Caveat — SQLite on Vercel is ephemeral.** `/tmp` is per-lambda-instance and
-clears at every cold start. Sample seed runs on each new instance, so the demo
-always looks alive, but registrations and posts won't survive deploys or
-~5-minute idle periods. For real persistence, swap `better-sqlite3` for the
-[`@libsql/client`](https://docs.turso.tech/) (Turso) — same SQL dialect,
-remote-hosted, free tier.
+**3. Add environment variables**
 
-### Deploy to Railway / Fly.io
+Either via the Vercel dashboard (Project → Settings → Environment Variables) or
+the CLI (`vercel env add NAME`):
 
-These platforms give you a persistent disk; the SQLite path stays as
-`data/boxos.db` and survives across deploys.
+| Variable               | Value                                              |
+| ---------------------- | -------------------------------------------------- |
+| `TURSO_DATABASE_URL`   | the `libsql://…turso.io` URL from step 1           |
+| `TURSO_AUTH_TOKEN`     | the token from step 1                              |
+| `SESSION_SECRET`       | `openssl rand -base64 48` (48+ chars)              |
+| `ADMIN_USERNAME`       | your GitHub username (whoever can write blog posts)|
+
+**4. Promote to production**
+
+```sh
+vercel --prod
+```
+
+Open the production URL. The first request runs migrations and seeds three
+sample blog posts and six forum threads — the homepage will be populated
+immediately. Register your `ADMIN_USERNAME` account; you'll get the admin flag
+and the *Write a post* button on the blog index.
+
+**5. (optional) Custom domain.** In the Vercel dashboard → Domains, add a
+domain. Vercel handles SSL automatically.
+
+### Local development
+
+If `TURSO_DATABASE_URL` is unset, the client falls back to a local file
+under `data/boxos.db`. No Turso account required to develop.
+
+### Deploy: Railway / Fly.io
+
+For a self-hosted feel: these platforms give a persistent disk. Set
+`DATABASE_URL=file:/data/boxos.db` (or wherever the volume is mounted) and the
+same `SESSION_SECRET` and `ADMIN_USERNAME`.
 
 ## Source layout
 

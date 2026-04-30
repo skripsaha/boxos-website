@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { db } from "@/lib/db";
+import { many } from "@/lib/db";
 import { timeAgo } from "@/lib/markdown";
 
 export const metadata = { title: "Forum" };
@@ -19,7 +19,7 @@ type CategoryRow = {
 };
 
 export default async function ForumIndex() {
-  const cats = db().prepare(`
+  const cats = await many<CategoryRow>(`
     SELECT
       c.id, c.slug, c.name, c.description,
       (SELECT COUNT(*) FROM forum_threads WHERE category_id = c.id) AS thread_count,
@@ -30,14 +30,14 @@ export default async function ForumIndex() {
       (SELECT u.username FROM forum_threads t JOIN users u ON u.id = t.author_id WHERE t.category_id = c.id ORDER BY t.last_post_at DESC LIMIT 1) AS last_author
     FROM forum_categories c
     ORDER BY c.position ASC
-  `).all() as CategoryRow[];
+  `);
 
-  const recent = db().prepare(`
+  const recent = await many<{ id: number; title: string; last_post_at: number; category_name: string; category_slug: string; author_name: string; post_count: number }>(`
     SELECT t.id, t.title, t.last_post_at, c.name AS category_name, c.slug AS category_slug, u.username AS author_name,
            (SELECT COUNT(*) FROM forum_posts WHERE thread_id = t.id) AS post_count
     FROM forum_threads t JOIN forum_categories c ON c.id = t.category_id JOIN users u ON u.id = t.author_id
     ORDER BY t.last_post_at DESC LIMIT 8
-  `).all() as { id: number; title: string; last_post_at: number; category_name: string; category_slug: string; author_name: string; post_count: number }[];
+  `);
 
   return (
     <section className="container-x py-20 md:py-28">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { db } from "@/lib/db";
+import { one, many } from "@/lib/db";
 import { formatDate, renderMarkdown, timeAgo } from "@/lib/markdown";
 import { getCurrentUser } from "@/lib/auth";
 import { ReplyForm } from "./reply";
@@ -27,7 +27,7 @@ type PostRow = {
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const t = db().prepare("SELECT title FROM forum_threads WHERE id = ?").get(Number(id)) as { title: string } | undefined;
+  const t = await one<{ title: string }>("SELECT title FROM forum_threads WHERE id = ?", [Number(id)]);
   return { title: t ? t.title : "Thread" };
 }
 
@@ -36,22 +36,24 @@ export default async function ThreadPage({ params }: { params: Promise<{ id: str
   const tid = Number(id);
   if (!Number.isFinite(tid)) notFound();
 
-  const thread = db().prepare(`
-    SELECT t.id, t.title, t.created_at, t.category_id,
-           c.slug AS category_slug, c.name AS category_name,
-           u.username AS author_name
-    FROM forum_threads t
-    JOIN forum_categories c ON c.id = t.category_id
-    JOIN users u ON u.id = t.author_id
-    WHERE t.id = ?
-  `).get(tid) as ThreadRow | undefined;
+  const thread = await one<ThreadRow>(
+    `SELECT t.id, t.title, t.created_at, t.category_id,
+            c.slug AS category_slug, c.name AS category_name,
+            u.username AS author_name
+     FROM forum_threads t
+     JOIN forum_categories c ON c.id = t.category_id
+     JOIN users u ON u.id = t.author_id
+     WHERE t.id = ?`,
+    [tid]
+  );
   if (!thread) notFound();
 
-  const posts = db().prepare(`
-    SELECT p.id, p.body, p.created_at, p.author_id, u.username AS author_name
-    FROM forum_posts p JOIN users u ON u.id = p.author_id
-    WHERE p.thread_id = ? ORDER BY p.created_at ASC
-  `).all(tid) as PostRow[];
+  const posts = await many<PostRow>(
+    `SELECT p.id, p.body, p.created_at, p.author_id, u.username AS author_name
+     FROM forum_posts p JOIN users u ON u.id = p.author_id
+     WHERE p.thread_id = ? ORDER BY p.created_at ASC`,
+    [tid]
+  );
 
   const user = await getCurrentUser();
 

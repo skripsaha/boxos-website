@@ -1,138 +1,169 @@
-import Database from "better-sqlite3";
+import { createClient, type Client, type InValue, type Row, type ResultSet } from "@libsql/client";
 import path from "node:path";
 import fs from "node:fs";
 
-let _db: Database.Database | null = null;
+let _client: Client | null = null;
+let _initPromise: Promise<void> | null = null;
 
-function resolveDbPath(): string {
-  // On Vercel/serverless platforms only /tmp is writable. The DB will not
-  // survive cold starts; the seedIfEmpty pass repopulates each new instance.
-  if (!process.env.DB_PATH && process.env.VERCEL) return "/tmp/boxos.db";
-  const raw = process.env.DB_PATH ?? "data/boxos.db";
-  return path.isAbsolute(raw) ? raw : path.join(process.cwd(), raw);
+function clientUrl(): { url: string; authToken?: string } {
+  const url = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN ?? process.env.DATABASE_AUTH_TOKEN;
+  if (url) return { url, authToken };
+
+  // Local dev fallback — file-backed sqlite under data/.
+  const local = path.join(process.cwd(), "data", "boxos.db");
+  fs.mkdirSync(path.dirname(local), { recursive: true });
+  return { url: `file:${local}` };
 }
 
-export function db(): Database.Database {
-  if (_db) return _db;
-
-  const dbPath = resolveDbPath();
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-
-  const handle = new Database(dbPath);
-  handle.pragma("journal_mode = WAL");
-  handle.pragma("foreign_keys = ON");
-  handle.pragma("synchronous = NORMAL");
-
-  migrate(handle);
-  seedIfEmpty(handle);
-
-  _db = handle;
-  return handle;
+export function db(): Client {
+  if (_client) return _client;
+  const { url, authToken } = clientUrl();
+  _client = createClient({ url, authToken, intMode: "number" });
+  return _client;
 }
 
-function migrate(d: Database.Database) {
-  d.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL UNIQUE,
-      email TEXT UNIQUE,
-      password_hash TEXT NOT NULL,
-      is_admin INTEGER NOT NULL DEFAULT 0,
-      bio TEXT,
-      created_at INTEGER NOT NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS blog_posts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      slug TEXT NOT NULL UNIQUE,
-      title TEXT NOT NULL,
-      excerpt TEXT NOT NULL,
-      body TEXT NOT NULL,
-      author_id INTEGER NOT NULL,
-      published_at INTEGER NOT NULL,
-      FOREIGN KEY (author_id) REFERENCES users(id)
-    );
-    CREATE INDEX IF NOT EXISTS idx_blog_published ON blog_posts(published_at DESC);
-
-    CREATE TABLE IF NOT EXISTS forum_categories (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      slug TEXT NOT NULL UNIQUE,
-      name TEXT NOT NULL,
-      description TEXT NOT NULL,
-      position INTEGER NOT NULL DEFAULT 0
-    );
-
-    CREATE TABLE IF NOT EXISTS forum_threads (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      category_id INTEGER NOT NULL,
-      title TEXT NOT NULL,
-      author_id INTEGER NOT NULL,
-      created_at INTEGER NOT NULL,
-      last_post_at INTEGER NOT NULL,
-      FOREIGN KEY (category_id) REFERENCES forum_categories(id),
-      FOREIGN KEY (author_id) REFERENCES users(id)
-    );
-    CREATE INDEX IF NOT EXISTS idx_threads_cat ON forum_threads(category_id, last_post_at DESC);
-    CREATE INDEX IF NOT EXISTS idx_threads_recent ON forum_threads(last_post_at DESC);
-
-    CREATE TABLE IF NOT EXISTS forum_posts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      thread_id INTEGER NOT NULL,
-      author_id INTEGER NOT NULL,
-      body TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      FOREIGN KEY (thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE,
-      FOREIGN KEY (author_id) REFERENCES users(id)
-    );
-    CREATE INDEX IF NOT EXISTS idx_posts_thread ON forum_posts(thread_id, created_at ASC);
-  `);
+/** Idempotent: every cold start runs migrations + seedIfEmpty exactly once. */
+export async function ready(): Promise<void> {
+  if (_initPromise) return _initPromise;
+  _initPromise = (async () => {
+    await migrate();
+    await seedIfEmpty();
+  })();
+  return _initPromise;
 }
 
-function seedIfEmpty(d: Database.Database) {
-  const cats = d.prepare("SELECT COUNT(*) AS n FROM forum_categories").get() as { n: number };
-  if (cats.n === 0) {
-    const insert = d.prepare(
-      "INSERT INTO forum_categories (slug, name, description, position) VALUES (?, ?, ?, ?)"
-    );
-    const data = [
+/** Convenience helpers — every call site goes through these so we can swap drivers. */
+export async function one<T = Row>(sql: string, args: InValue[] = []): Promise<T | undefined> {
+  await ready();
+  const rs = await db().execute({ sql, args });
+  return rs.rows[0] as unknown as T | undefined;
+}
+
+export async function many<T = Row>(sql: string, args: InValue[] = []): Promise<T[]> {
+  await ready();
+  const rs = await db().execute({ sql, args });
+  return rs.rows as unknown as T[];
+}
+
+export async function run(sql: string, args: InValue[] = []): Promise<ResultSet> {
+  await ready();
+  return db().execute({ sql, args });
+}
+
+export const now = () => Math.floor(Date.now() / 1000);
+
+/* ────────────────────────────────────────────
+   schema
+   ──────────────────────────────────────────── */
+
+const DDL: string[] = [
+  `CREATE TABLE IF NOT EXISTS users (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     username TEXT NOT NULL UNIQUE,
+     email TEXT UNIQUE,
+     password_hash TEXT NOT NULL,
+     is_admin INTEGER NOT NULL DEFAULT 0,
+     bio TEXT,
+     created_at INTEGER NOT NULL
+   )`,
+  `CREATE TABLE IF NOT EXISTS blog_posts (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     slug TEXT NOT NULL UNIQUE,
+     title TEXT NOT NULL,
+     excerpt TEXT NOT NULL,
+     body TEXT NOT NULL,
+     author_id INTEGER NOT NULL,
+     published_at INTEGER NOT NULL,
+     FOREIGN KEY (author_id) REFERENCES users(id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_blog_published ON blog_posts(published_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS forum_categories (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     slug TEXT NOT NULL UNIQUE,
+     name TEXT NOT NULL,
+     description TEXT NOT NULL,
+     position INTEGER NOT NULL DEFAULT 0
+   )`,
+  `CREATE TABLE IF NOT EXISTS forum_threads (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     category_id INTEGER NOT NULL,
+     title TEXT NOT NULL,
+     author_id INTEGER NOT NULL,
+     created_at INTEGER NOT NULL,
+     last_post_at INTEGER NOT NULL,
+     FOREIGN KEY (category_id) REFERENCES forum_categories(id),
+     FOREIGN KEY (author_id) REFERENCES users(id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_threads_cat ON forum_threads(category_id, last_post_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS idx_threads_recent ON forum_threads(last_post_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS forum_posts (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     thread_id INTEGER NOT NULL,
+     author_id INTEGER NOT NULL,
+     body TEXT NOT NULL,
+     created_at INTEGER NOT NULL,
+     FOREIGN KEY (thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE,
+     FOREIGN KEY (author_id) REFERENCES users(id)
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_posts_thread ON forum_posts(thread_id, created_at ASC)`,
+];
+
+async function migrate() {
+  const c = db();
+  for (const stmt of DDL) {
+    await c.execute(stmt);
+  }
+}
+
+/* ────────────────────────────────────────────
+   seed (only on a brand-new database)
+   ──────────────────────────────────────────── */
+
+async function seedIfEmpty() {
+  const c = db();
+  const cats = (await c.execute("SELECT COUNT(*) AS n FROM forum_categories")).rows[0] as unknown as { n: number };
+  if (Number(cats.n) === 0) {
+    const data: [string, string, string, number][] = [
       ["announcements", "Announcements", "Releases, breaking changes, project news.", 0],
       ["kernel", "Kernel internals", "Scheduler, memory, AMP, IPC, syscalls — anything below the user boundary.", 1],
       ["userland", "Userland & boxlib", "Programs, shells, utilities, language ports.", 2],
       ["filesystem", "Storage & TagFS", "DiskBook, content addressing, manifests, persistence.", 3],
       ["porting", "Porting & hardware", "PCIe, drivers, ACPI, virtualization, real-iron reports.", 4],
       ["meta", "Meta & off-topic", "Project direction, design philosophy, community.", 5],
-    ] as const;
-    const tx = d.transaction(() => {
-      for (const row of data) insert.run(...row);
-    });
-    tx();
+    ];
+    await c.batch(
+      data.map(([slug, name, desc, pos]) => ({
+        sql: "INSERT INTO forum_categories (slug, name, description, position) VALUES (?, ?, ?, ?)",
+        args: [slug, name, desc, pos],
+      })),
+      "write"
+    );
   }
 
-  // sample content (only on a fresh DB)
-  const userCount = d.prepare("SELECT COUNT(*) AS n FROM users").get() as { n: number };
-  if (userCount.n === 0) {
-    seedContent(d);
+  const userCount = (await c.execute("SELECT COUNT(*) AS n FROM users")).rows[0] as unknown as { n: number };
+  if (Number(userCount.n) === 0) {
+    await seedContent();
   }
 }
 
-function seedContent(d: Database.Database) {
-  // pseudo-system author — bcrypt cannot match "!", so login as this user is impossible.
+async function seedContent() {
+  const c = db();
   const ts = Math.floor(Date.now() / 1000);
-  const sysId = Number(
-    d.prepare(
-      "INSERT INTO users (username, email, password_hash, is_admin, created_at, bio) VALUES (?, NULL, ?, 0, ?, ?)"
-    ).run("boxos", "!", ts - 86400 * 60, "BoxOS project announcements & seeded examples.").lastInsertRowid
-  );
 
-  // blog posts
-  const insertPost = d.prepare(
-    "INSERT INTO blog_posts (slug, title, excerpt, body, author_id, published_at) VALUES (?, ?, ?, ?, ?, ?)"
-  );
-  insertPost.run(
-    "what-is-boxos",
-    "What BoxOS is, and what it isn't",
-    "An honest description of the project: not a Linux clone, not a microkernel exercise, not a research toy. A small kernel built on a non-Unix paradigm.",
-    `BoxOS is a 64-bit kernel for x86_64 written from scratch.
+  // pseudo-system author — bcrypt cannot match "!", so login as this user is impossible.
+  const sysIns = await c.execute({
+    sql: "INSERT INTO users (username, email, password_hash, is_admin, created_at, bio) VALUES (?, NULL, ?, 0, ?, ?)",
+    args: ["boxos", "!", ts - 86400 * 60, "BoxOS project announcements & seeded examples."],
+  });
+  const sysId = Number(sysIns.lastInsertRowid);
+
+  const posts: [string, string, string, string, number][] = [
+    [
+      "what-is-boxos",
+      "What BoxOS is, and what it isn't",
+      "An honest description of the project: not a Linux clone, not a microkernel exercise, not a research toy. A small kernel built on a non-Unix paradigm.",
+      `BoxOS is a 64-bit kernel for x86_64 written from scratch.
 
 It is not a Linux clone. It is not a microkernel exercise. It is not a teaching toy. It is a deliberate attempt to ask: *what would an operating system look like if the past forty years of Unix convention were optional?*
 
@@ -159,14 +190,13 @@ You will see a shell, a few sample programs, and a benchmark harness. The system
 ## What is missing
 
 A networking stack. A windowing system. Anything resembling a package manager. Most drivers. The kernel is honest about its scope: small, predictable, and slowly growing.`,
-    sysId,
-    ts - 86400 * 14
-  );
-  insertPost.run(
-    "asymmetric-multiprocessing",
-    "Why BoxOS uses AMP, not SMP",
-    "Symmetric multiprocessing is a default, not a law. We chose to give the boot core a special role — and the rest of the kernel got simpler as a result.",
-    `Most kernels treat all CPU cores as equivalent. The same scheduler queue, the same locks, the same global state. This is symmetric multiprocessing — SMP — and it is the dominant design.
+      ts - 86400 * 14,
+    ],
+    [
+      "asymmetric-multiprocessing",
+      "Why BoxOS uses AMP, not SMP",
+      "Symmetric multiprocessing is a default, not a law. We chose to give the boot core a special role — and the rest of the kernel got simpler as a result.",
+      `Most kernels treat all CPU cores as equivalent. The same scheduler queue, the same locks, the same global state. This is symmetric multiprocessing — SMP — and it is the dominant design.
 
 BoxOS is asymmetric. The boot core (CPU 0) runs the global scheduler, the IPC fabric, and the storage subsystem. The remaining cores are *workers* — they receive work units and execute them.
 
@@ -189,14 +219,13 @@ Cross-core IPC is slightly slower, as expected. But there are no lock contention
 ## Tradeoffs
 
 A misbehaving program cannot starve other workers. It can, however, queue up work that the boot core has to dispatch. This is a real cost. We accept it.`,
-    sysId,
-    ts - 86400 * 7
-  );
-  insertPost.run(
-    "the-manifest-is-the-system-call-table",
-    "The Manifest is the system call table",
-    "We threw out syscall numbers. Programs invoke kernel operations by name, validated at link time, dispatched via a small table.",
-    `In Linux, system calls are numbers: \`SYS_read\` is 0, \`SYS_write\` is 1, and so on. The numbers are part of the ABI; you cannot change them without breaking everything.
+      ts - 86400 * 7,
+    ],
+    [
+      "the-manifest-is-the-system-call-table",
+      "The Manifest is the system call table",
+      "We threw out syscall numbers. Programs invoke kernel operations by name, validated at link time, dispatched via a small table.",
+      `In Linux, system calls are numbers: \`SYS_read\` is 0, \`SYS_write\` is 1, and so on. The numbers are part of the ABI; you cannot change them without breaking everything.
 
 In BoxOS, system calls are *rows* in a table called the Manifest. Each row has a name, a register-passing signature, a side-effect descriptor, and a capability requirement. The kernel exposes the Manifest as a structured object; \`boxlib\` reads it and produces typed wrappers.
 
@@ -218,32 +247,46 @@ A typical program never calls \`manifest_invoke\` directly — it uses generated
 - **Introspectability.** Userland can ask the kernel which operations it has, what they take, and what they do.
 
 The Manifest currently has 83 rows. Twelve more are pending. The number will grow, but each row is justified and reviewed.`,
-    sysId,
-    ts - 86400 * 2
+      ts - 86400 * 2,
+    ],
+  ];
+  await c.batch(
+    posts.map(([slug, title, excerpt, body, published_at]) => ({
+      sql: "INSERT INTO blog_posts (slug, title, excerpt, body, author_id, published_at) VALUES (?, ?, ?, ?, ?, ?)",
+      args: [slug, title, excerpt, body, sysId, published_at],
+    })),
+    "write"
   );
 
   // forum threads with replies
-  const cats = d.prepare("SELECT id, slug FROM forum_categories").all() as { id: number; slug: string }[];
-  const cat = (slug: string) => cats.find((c) => c.slug === slug)!.id;
+  const catRows = await c.execute("SELECT id, slug FROM forum_categories");
+  const cats = catRows.rows as unknown as { id: number; slug: string }[];
+  const cat = (slug: string) => Number(cats.find((r) => r.slug === slug)!.id);
 
-  function thread(category: number, title: string, body: string, when: number, replies: { body: string; offset: number }[] = []) {
-    const tres = d.prepare(
-      "INSERT INTO forum_threads (category_id, title, author_id, created_at, last_post_at) VALUES (?, ?, ?, ?, ?)"
-    ).run(category, title, sysId, when, when);
+  type Reply = { offset: number; body: string };
+  async function thread(category: number, title: string, body: string, when: number, replies: Reply[] = []) {
+    const tres = await c.execute({
+      sql: "INSERT INTO forum_threads (category_id, title, author_id, created_at, last_post_at) VALUES (?, ?, ?, ?, ?)",
+      args: [category, title, sysId, when, when],
+    });
     const tid = Number(tres.lastInsertRowid);
-    d.prepare("INSERT INTO forum_posts (thread_id, author_id, body, created_at) VALUES (?, ?, ?, ?)")
-      .run(tid, sysId, body, when);
+    await c.execute({
+      sql: "INSERT INTO forum_posts (thread_id, author_id, body, created_at) VALUES (?, ?, ?, ?)",
+      args: [tid, sysId, body, when],
+    });
     let last = when;
     for (const r of replies) {
       const rt = when + r.offset;
-      d.prepare("INSERT INTO forum_posts (thread_id, author_id, body, created_at) VALUES (?, ?, ?, ?)")
-        .run(tid, sysId, r.body, rt);
-      last = Math.max(last, rt);
+      await c.execute({
+        sql: "INSERT INTO forum_posts (thread_id, author_id, body, created_at) VALUES (?, ?, ?, ?)",
+        args: [tid, sysId, r.body, rt],
+      });
+      if (rt > last) last = rt;
     }
-    d.prepare("UPDATE forum_threads SET last_post_at = ? WHERE id = ?").run(last, tid);
+    await c.execute({ sql: "UPDATE forum_threads SET last_post_at = ? WHERE id = ?", args: [last, tid] });
   }
 
-  thread(
+  await thread(
     cat("announcements"),
     "v0.1.0-alpha is out",
     `The first tagged release of the kernel. Boots on UEFI, runs the shell and bench, exposes 83 Manifest operations.
@@ -257,7 +300,7 @@ Known limitations:
 If something doesn't work, file it in *Kernel internals* or *Porting & hardware*.`,
     ts - 86400 * 3
   );
-  thread(
+  await thread(
     cat("kernel"),
     "Lock ordering between scheduler and pocket fabric",
     `When a worker tries to send into a Pocket whose receiver is being descheduled, we currently take the receiver's Cabin lock from inside the Pocket fabric. This is the only lock-from-below in the system and it makes me nervous.
@@ -269,15 +312,15 @@ Has anyone hit a deadlock here?`,
     [
       {
         offset: 60 * 60 * 4,
-        body: `I have not hit a deadlock, but I have hit a 200 µs latency spike that I traced to this exact path. The mailbox-based design sounds correct. If you push a patch I will benchmark it on the four-core run.`,
+        body: "I have not hit a deadlock, but I have hit a 200 µs latency spike that I traced to this exact path. The mailbox-based design sounds correct. If you push a patch I will benchmark it on the four-core run.",
       },
       {
         offset: 60 * 60 * 9,
-        body: `Pushed a draft to the *kernel* category. It uses the existing scheduler mailbox so no new infrastructure. Numbers tomorrow.`,
+        body: "Pushed a draft to the *kernel* category. It uses the existing scheduler mailbox so no new infrastructure. Numbers tomorrow.",
       },
     ]
   );
-  thread(
+  await thread(
     cat("userland"),
     "boxlib: a tiny stdio that doesn't pretend to be POSIX",
     `boxlib's stdio is intentionally small: \`print\`, \`println\`, \`printf\`, \`read_line\`. No FILE*, no buffering layers, no \`fflush\`. The shell uses it directly.
@@ -286,14 +329,9 @@ Question: should we expose a streaming \`writer\` interface that programs can co
 
 I lean toward keeping it dumb.`,
     ts - 86400 * 5,
-    [
-      {
-        offset: 60 * 60 * 12,
-        body: `Dumb stdio + raw Pockets. Anything more is a leak of abstraction. If a program needs streaming, it should use the channel.`,
-      },
-    ]
+    [{ offset: 60 * 60 * 12, body: "Dumb stdio + raw Pockets. Anything more is a leak of abstraction. If a program needs streaming, it should use the channel." }]
   );
-  thread(
+  await thread(
     cat("filesystem"),
     "TagFS: how to handle name collisions in a content-addressed world",
     `If two programs store distinct files that happen to share a SHA-256 (extremely unlikely but cryptographically possible), Deck currently treats them as one. This is correct for content addressing but surprises programs that expect identity.
@@ -306,7 +344,7 @@ Two options:
 I prefer option 2 — the default is what makes Deck cheap.`,
     ts - 86400 * 8
   );
-  thread(
+  await thread(
     cat("porting"),
     "Real-iron report: ASUS ROG Strix B550",
     `Booted from a USB stick, UEFI mode, no compatibility shims. Framebuffer came up at native resolution. ATA driver picked up the SSD as expected. Reboot survived without corruption.
@@ -318,7 +356,7 @@ Did NOT work:
 Boot time, cold: 0.61 s to shell prompt.`,
     ts - 86400 * 11
   );
-  thread(
+  await thread(
     cat("meta"),
     "Why we are not a microkernel",
     `Periodic question from drive-by readers: "this looks like a microkernel, why don't you call it one?"
@@ -327,14 +365,6 @@ Because we are not. The scheduler, vmm, pocket fabric, and storage layer all run
 
 What we *do* have is a small, named operation table — and that's a different axis of design. Microkernels separate by privilege. We separate by *contract*.`,
     ts - 86400 * 16,
-    [
-      {
-        offset: 60 * 60 * 30,
-        body: `This framing is helpful. "Separate by contract, not by privilege" — I am stealing that.`,
-      },
-    ]
+    [{ offset: 60 * 60 * 30, body: 'This framing is helpful. "Separate by contract, not by privilege" — I am stealing that.' }]
   );
 }
-
-/** convenience: timestamp as unix seconds */
-export const now = () => Math.floor(Date.now() / 1000);

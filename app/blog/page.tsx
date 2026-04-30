@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { db } from "@/lib/db";
+import { many } from "@/lib/db";
 import { formatDate, readingMinutes } from "@/lib/markdown";
 import { getCurrentUser } from "@/lib/auth";
 import type { BlogPost } from "@/lib/types";
@@ -9,13 +9,11 @@ export const dynamic = "force-dynamic";
 
 export default async function BlogIndex() {
   const user = await getCurrentUser();
-  const rows = db()
-    .prepare(
-      `SELECT p.id, p.slug, p.title, p.excerpt, p.body, p.published_at, u.username AS author_name
-       FROM blog_posts p JOIN users u ON u.id = p.author_id
-       ORDER BY p.published_at DESC`
-    )
-    .all() as (Pick<BlogPost, "id" | "slug" | "title" | "excerpt" | "body" | "published_at" | "author_name">)[];
+  const rows = await many<Pick<BlogPost, "id" | "slug" | "title" | "excerpt" | "body" | "published_at" | "author_name">>(
+    `SELECT p.id, p.slug, p.title, p.excerpt, p.body, p.published_at, u.username AS author_name
+     FROM blog_posts p JOIN users u ON u.id = p.author_id
+     ORDER BY p.published_at DESC`
+  );
 
   const posts = rows.map((r) => ({ ...r, reading: readingMinutes(r.body) }));
   const featured = posts[0];

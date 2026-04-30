@@ -1,29 +1,27 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/Code";
-import { db } from "@/lib/db";
+import { many } from "@/lib/db";
 import { formatDate, timeAgo } from "@/lib/markdown";
 import type { BlogPost, ForumThread } from "@/lib/types";
 
-export default function HomePage() {
-  const posts = db()
-    .prepare(
-      `SELECT p.id, p.slug, p.title, p.excerpt, p.published_at, u.username AS author_name
-       FROM blog_posts p JOIN users u ON u.id = p.author_id
-       ORDER BY p.published_at DESC LIMIT 3`
-    )
-    .all() as Pick<BlogPost, "id" | "slug" | "title" | "excerpt" | "published_at" | "author_name">[];
+export const dynamic = "force-dynamic";
 
-  const threads = db()
-    .prepare(
-      `SELECT t.id, t.title, t.last_post_at, c.name AS category_name, c.slug AS category_slug,
-              u.username AS author_name,
-              (SELECT COUNT(*) FROM forum_posts WHERE thread_id = t.id) AS post_count
-       FROM forum_threads t
-       JOIN forum_categories c ON c.id = t.category_id
-       JOIN users u ON u.id = t.author_id
-       ORDER BY t.last_post_at DESC LIMIT 5`
-    )
-    .all() as (Pick<ForumThread, "id" | "title" | "last_post_at" | "category_name" | "category_slug" | "author_name" | "post_count">)[];
+export default async function HomePage() {
+  const posts = await many<Pick<BlogPost, "id" | "slug" | "title" | "excerpt" | "published_at" | "author_name">>(
+    `SELECT p.id, p.slug, p.title, p.excerpt, p.published_at, u.username AS author_name
+     FROM blog_posts p JOIN users u ON u.id = p.author_id
+     ORDER BY p.published_at DESC LIMIT 3`
+  );
+
+  const threads = await many<Pick<ForumThread, "id" | "title" | "last_post_at" | "category_name" | "category_slug" | "author_name" | "post_count">>(
+    `SELECT t.id, t.title, t.last_post_at, c.name AS category_name, c.slug AS category_slug,
+            u.username AS author_name,
+            (SELECT COUNT(*) FROM forum_posts WHERE thread_id = t.id) AS post_count
+     FROM forum_threads t
+     JOIN forum_categories c ON c.id = t.category_id
+     JOIN users u ON u.id = t.author_id
+     ORDER BY t.last_post_at DESC LIMIT 5`
+  );
 
   return (
     <>
