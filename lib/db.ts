@@ -5,6 +5,9 @@ import fs from "node:fs";
 let _db: Database.Database | null = null;
 
 function resolveDbPath(): string {
+  // On Vercel/serverless platforms only /tmp is writable. The DB will not
+  // survive cold starts; the seedIfEmpty pass repopulates each new instance.
+  if (!process.env.DB_PATH && process.env.VERCEL) return "/tmp/boxos.db";
   const raw = process.env.DB_PATH ?? "data/boxos.db";
   return path.isAbsolute(raw) ? raw : path.join(process.cwd(), raw);
 }

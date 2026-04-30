@@ -44,6 +44,39 @@ npm start                      # serves on port 4000
 The site has no external dependencies. Drop the project on any host that can run
 Node 20+. Persist `data/boxos.db` across deploys — it holds users, posts, threads.
 
+### Deploy to Vercel
+
+The repo is Vercel-ready out of the box.
+
+```sh
+npm i -g vercel        # one-time
+vercel login           # browser OAuth
+vercel                 # first deploy (preview)
+vercel --prod          # promote to production
+```
+
+During the first run, accept the defaults — Vercel auto-detects Next.js. Then in
+the dashboard (or via `vercel env add`) set:
+
+| Variable          | Value                                          |
+| ----------------- | ---------------------------------------------- |
+| `SESSION_SECRET`  | `openssl rand -base64 48`                      |
+| `ADMIN_USERNAME`  | your GitHub handle                             |
+
+`DB_PATH` is auto-set to `/tmp/boxos.db` when `VERCEL=1` — no action needed.
+
+**Caveat — SQLite on Vercel is ephemeral.** `/tmp` is per-lambda-instance and
+clears at every cold start. Sample seed runs on each new instance, so the demo
+always looks alive, but registrations and posts won't survive deploys or
+~5-minute idle periods. For real persistence, swap `better-sqlite3` for the
+[`@libsql/client`](https://docs.turso.tech/) (Turso) — same SQL dialect,
+remote-hosted, free tier.
+
+### Deploy to Railway / Fly.io
+
+These platforms give you a persistent disk; the SQLite path stays as
+`data/boxos.db` and survives across deploys.
+
 ## Source layout
 
 ```
