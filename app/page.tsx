@@ -41,7 +41,7 @@ export default async function HomePage() {
       <Primitives />
       <TagFsTeaser />
       <Aphorism />
-      <Pulse commits={commits} />
+      <Commits commits={commits} />
       {gallery.length > 0 && <GalleryStrip items={gallery} />}
       {hof.length > 0 && <HofPreview items={hof} />}
       <Lanes />
@@ -123,12 +123,11 @@ function TagFsTeaser() {
       <div className="container-x py-24 md:py-32 grid lg:grid-cols-12 gap-12">
         <div className="lg:col-span-5 lg:pt-6">
           <h2 className="display text-[clamp(32px,4.6vw,56px)]">
-            Storage as a <em>graph</em>, not a tree.
+            <em>TagFS</em> — files indexed by tag.
           </h2>
           <p className="prose-body mt-6 max-w-[44ch]">
-            POSIX makes you choose one path per file. TagFS doesn't make you choose. The same
-            blob is reachable through any subset of its tags — and identical bytes are stored
-            once, regardless of who put them there.
+            Each file's table entry stores its content hash and a list of tag IDs.
+            The tag registry resolves each ID to a name. Identical bytes are stored once.
           </p>
           <div className="mt-8">
             <Link href="/docs#tagfs" className="btn-link text-sm font-medium">
@@ -137,9 +136,7 @@ function TagFsTeaser() {
           </div>
         </div>
         <div className="lg:col-span-7">
-          <div className="surface rounded-[14px] p-3 md:p-5 bg-[color:var(--color-paper)]">
-            <TagFsDiagram />
-          </div>
+          <TagFsDiagram />
         </div>
       </div>
     </section>
@@ -162,17 +159,17 @@ function Aphorism() {
   );
 }
 
-function Pulse({ commits }: { commits: GhCommit[] }) {
+function Commits({ commits }: { commits: GhCommit[] }) {
   if (commits.length === 0) return null;
   return (
     <section className="container-x py-24 md:py-28">
       <div className="flex items-end justify-between gap-6 mb-10">
         <div>
           <h2 className="display text-[clamp(28px,3.8vw,44px)]">
-            The <em>pulse</em>.
+            Recent <em>commits</em>.
           </h2>
           <p className="prose-body mt-4 max-w-[48ch]">
-            Live from the kernel's commit log. Whatever shipped last lands here.
+            Live from the kernel's commit log on GitHub.
           </p>
         </div>
         <Link href="/changelog" className="btn-link text-sm font-medium hidden md:inline">

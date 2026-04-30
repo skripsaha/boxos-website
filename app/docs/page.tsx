@@ -127,41 +127,46 @@ export default function DocsPage() {
           <Section id="tagfs" tag="draft" title="TagFS — vs the file tree">
             <p>
               POSIX organises persistence as a <em>tree</em>: directories nested inside directories,
-              each file pinned to one path. TagFS organises persistence as a <em>graph</em>: files
-              are addressed by content, and tags describe what each file <em>is</em> rather than
-              where it lives.
+              each file pinned to one path. TagFS replaces the tree with a small set of on-disk
+              tables: a tag registry, a file table, and a metadata pool, all sitting on top of a
+              4 KB block layer.
             </p>
             <TagFsDiagram />
             <p>
-              In TagFS, two programs that store the same bytes share storage transparently. There
-              are no "missing parents" — the file is reachable through any subset of its tags. Renaming
-              is just adding or removing a tag.
+              Each file table entry carries the file's content hash, its size, the blocks it
+              occupies and a list of tag IDs. The tag registry resolves each ID to a name; it has
+              512 hash buckets. Identical content is stored once — that's where dedup lives.
+            </p>
+            <p>
+              Below this sit three further submodules in <code>src/kernel/tagfs/</code>:{" "}
+              <strong>Braid</strong> (per-block redundancy with three modes — mirror, stripe,
+              weave), <strong>CoW</strong> with up to 64 snapshots, and <strong>self-heal</strong>{" "}
+              backed by per-block <code>BoxHash</code> checksums.
             </p>
           </Section>
 
           <Section id="use" tag="draft" title="use — switching context">
             <p>
-              The shell's <code>use</code> command switches the active context for subsequent commands
-              — which Deck reads and writes go to, which set of tags is in scope, which Cabin a launch
-              attaches to. It plays the role of <code>cd</code>, but the thing being changed is a graph
-              vertex, not a tree node.
+              The shell's <code>use</code> command sets the active <em>tag context</em> for
+              subsequent commands. Each argument is a tag name; calling <code>use</code> with no
+              arguments clears the context. The prompt updates to reflect what's currently in
+              scope. Source: <code>src/userspace/shell/commands/cmd_use.c</code>.
             </p>
             <CodeBlock language="shell">
-{`# attach to a Deck and start operating on a tag context
-use deck:photos
-use tag:year=2024 tag:season=summer
+{`# set the context to two tags
+use kernel notify
 
-# from now on, listing files defaults to the current selection
-ls
-# IMG_001.jpg  IMG_044.jpg  trail.svg  ...
+# the prompt now shows the active context
+# (commands that operate on TagFS use it as a default filter)
 
-# the prompt reflects the active context
-[photos | 2024+summer] _`}
+# clear the context
+use`}
             </CodeBlock>
             <p>
-              Because the system has no global filesystem namespace, <code>use</code> is the only path
-              into persistence. A program with no Deck capability cannot inherit one — it must be
-              granted explicitly by its parent Cabin's Manifest.
+              Up to <code>SHELL_MAX_CONTEXT_TAGS</code> tags can be active at once. The shell
+              persists them in <code>ShellState.context_tags</code> and forwards each one to
+              <code> context_set()</code>, which the file commands read when they list or open
+              entries.
             </p>
           </Section>
 
