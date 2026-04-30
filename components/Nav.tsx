@@ -8,7 +8,10 @@ import { Wordmark } from "./Wordmark";
 type SessionUser = { id: number; username: string; isAdmin: boolean } | null;
 
 const links = [
+  { href: "/architecture", label: "Architecture" },
+  { href: "/download", label: "Download" },
   { href: "/docs", label: "Docs" },
+  { href: "/changelog", label: "Changelog" },
   { href: "/blog", label: "Blog" },
   { href: "/forum", label: "Forum" },
 ];
@@ -55,15 +58,12 @@ export function Nav({ user }: { user: SessionUser }) {
               </Link>
             ))}
             <a
-              className="nav-link inline-flex items-center gap-1.5"
+              className="nav-link"
               href="https://github.com/skripsaha/boxos"
               target="_blank"
               rel="noreferrer"
             >
               Source
-              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden>
-                <path d="M3 9L9 3M9 3H4M9 3V8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
             </a>
           </nav>
         </div>

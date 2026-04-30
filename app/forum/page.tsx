@@ -43,17 +43,17 @@ export default async function ForumIndex() {
     <section className="container-x py-20 md:py-28">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="eyebrow eyebrow--brand">Community</p>
-          <h1 className="display text-[clamp(40px,6vw,76px)] mt-4">Forum</h1>
+          <h1 className="display text-[clamp(40px,6vw,76px)]">Forum</h1>
           <p className="prose-body mt-5 max-w-[58ch]">
-            Discuss design, report bugs, share patches, ask questions. The forum is the slow-tempo channel — long-form replies are welcome here.
+            Discuss design, report bugs, share patches, ask questions. The slow-tempo channel —
+            long-form replies are welcome here.
           </p>
         </div>
         <Link href="/forum/new" className="btn btn-primary">New thread</Link>
       </div>
 
       <div className="mt-14 surface rounded-[14px] overflow-hidden">
-        <header className="hidden md:grid grid-cols-12 px-6 py-3 text-[11px] tabular font-mono uppercase tracking-[0.14em] text-[color:var(--color-ink-3)] border-b hairline-2">
+        <header className="hidden md:grid grid-cols-12 px-6 py-3 text-[12px] text-[color:var(--color-ink-3)] border-b hairline-2">
           <span className="col-span-7">Category</span>
           <span className="col-span-2 text-right">Threads</span>
           <span className="col-span-3">Latest</span>
@@ -90,8 +90,8 @@ export default async function ForumIndex() {
 
       {recent.length > 0 && (
         <div id="recent" className="mt-20">
-          <p className="eyebrow eyebrow--brand">Recently active</p>
-          <ul className="mt-6 surface rounded-[14px] overflow-hidden">
+          <h2 className="text-[20px] font-medium tracking-tight mb-6">Recently active</h2>
+          <ul className="surface rounded-[14px] overflow-hidden">
             {recent.map((t, idx) => (
               <li key={t.id} className={idx > 0 ? "border-t hairline-2" : ""}>
                 <Link href={`/forum/t/${t.id}`} className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-[color:var(--color-paper-2)] transition-colors">

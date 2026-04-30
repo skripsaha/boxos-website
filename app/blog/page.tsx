@@ -23,12 +23,11 @@ export default async function BlogIndex() {
     <section className="container-x py-20 md:py-28">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="eyebrow eyebrow--brand">Blog</p>
-          <h1 className="display text-[clamp(40px,6vw,76px)] mt-4">
+          <h1 className="display text-[clamp(40px,6vw,76px)]">
             Notes from the kernel.
           </h1>
           <p className="prose-body mt-5 max-w-[58ch]">
-            Design decisions, post-mortems, microbenchmarks, and weeknotes on building BoxOS in the open.
+            Design decisions, post-mortems, weeknotes on building BoxOS in the open.
           </p>
         </div>
         {user?.is_admin ? (
@@ -47,8 +46,7 @@ export default async function BlogIndex() {
             className="mt-16 grid lg:grid-cols-12 gap-8 lg:gap-12 group border-b hairline pb-16"
           >
             <div className="lg:col-span-5">
-              <p className="eyebrow eyebrow--brand">Latest · featured</p>
-              <p className="mt-4 text-xs tabular font-mono text-[color:var(--color-ink-3)]">
+              <p className="text-xs tabular font-mono text-[color:var(--color-ink-3)]">
                 {formatDate(featured.published_at)} · {featured.author_name} · {featured.reading} min read
               </p>
             </div>

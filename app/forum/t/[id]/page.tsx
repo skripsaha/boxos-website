@@ -82,7 +82,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ id: str
               <header className="flex items-baseline justify-between gap-3 mb-3">
                 <div className="flex items-baseline gap-3 flex-wrap">
                   <span className="text-[15px] font-medium tracking-tight">{p.author_name}</span>
-                  {idx === 0 && <span className="tag tag-brand">OP</span>}
+                  {idx === 0 && <span className="text-[11px] tabular font-mono text-[color:var(--color-brand-deep)]">op</span>}
                 </div>
                 <span className="text-[11px] tabular font-mono text-[color:var(--color-ink-3)]">
                   {timeAgo(p.created_at)}

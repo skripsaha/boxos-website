@@ -29,8 +29,7 @@ export default async function AccountPage() {
     <section className="container-x py-20 md:py-28">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="eyebrow eyebrow--brand">Account</p>
-          <h1 className="display text-[clamp(34px,5vw,52px)] mt-4">{user.username}</h1>
+          <h1 className="display text-[clamp(34px,5vw,52px)]">{user.username}</h1>
           <p className="prose-body mt-3">
             Member since {formatDate(user.created_at)} · {user.is_admin ? "admin" : "community member"}
           </p>
@@ -44,7 +43,7 @@ export default async function AccountPage() {
 
       <div className="mt-16 grid lg:grid-cols-2 gap-10">
         <div>
-          <p className="eyebrow">Your threads</p>
+          <h2 className="text-[18px] font-medium tracking-tight">Your threads</h2>
           {threads.length === 0 ? (
             <p className="prose-body mt-5">You haven't started any threads yet.</p>
           ) : (
@@ -64,7 +63,7 @@ export default async function AccountPage() {
         </div>
 
         <div>
-          <p className="eyebrow">Your replies</p>
+          <h2 className="text-[18px] font-medium tracking-tight">Your replies</h2>
           {posts.length === 0 ? (
             <p className="prose-body mt-5">No replies yet.</p>
           ) : (

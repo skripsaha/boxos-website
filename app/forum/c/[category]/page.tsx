@@ -37,8 +37,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
       </Link>
       <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="eyebrow eyebrow--brand">Category</p>
-          <h1 className="display text-[clamp(34px,5vw,60px)] mt-3">{cat.name}</h1>
+          <h1 className="display text-[clamp(34px,5vw,60px)]">{cat.name}</h1>
           <p className="prose-body mt-4 max-w-[58ch]">{cat.description}</p>
         </div>
         <Link href={`/forum/new?cat=${cat.slug}`} className="btn btn-primary">New thread</Link>
@@ -52,7 +51,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ categ
           </div>
         ) : (
           <>
-            <header className="hidden md:grid grid-cols-12 px-6 py-3 text-[11px] tabular font-mono uppercase tracking-[0.14em] text-[color:var(--color-ink-3)] border-b hairline-2">
+            <header className="hidden md:grid grid-cols-12 px-6 py-3 text-[12px] text-[color:var(--color-ink-3)] border-b hairline-2">
               <span className="col-span-7">Thread</span>
               <span className="col-span-2 text-right">Posts</span>
               <span className="col-span-3">Last reply</span>

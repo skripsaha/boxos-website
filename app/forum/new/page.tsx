@@ -19,8 +19,7 @@ export default async function NewThreadPage({
 
   return (
     <section className="container-narrow py-20 md:py-24">
-      <p className="eyebrow eyebrow--brand">New thread</p>
-      <h1 className="display text-[clamp(34px,5vw,52px)] mt-4">Start a discussion</h1>
+      <h1 className="display text-[clamp(34px,5vw,52px)]">Start a discussion</h1>
       <p className="prose-body mt-4">
         Pick the category that fits best. Markdown is supported in the body.
       </p>

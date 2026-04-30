@@ -10,7 +10,7 @@ export default async function NewPostPage() {
   if (!user.is_admin) {
     return (
       <section className="container-narrow py-24">
-        <p className="eyebrow">Forbidden</p>
+        <p className="text-[13px] font-medium text-[color:var(--color-danger)]">Forbidden</p>
         <h1 className="display text-[clamp(28px,4vw,40px)] mt-3">Only admins can publish blog posts.</h1>
         <p className="prose-body mt-5">If this should be you, set <code className="font-mono">ADMIN_USERNAME</code> in <code className="font-mono">.env</code> and re-register.</p>
       </section>
@@ -18,8 +18,7 @@ export default async function NewPostPage() {
   }
   return (
     <section className="container-narrow py-20 md:py-24">
-      <p className="eyebrow eyebrow--brand">New post</p>
-      <h1 className="display text-[clamp(34px,5vw,52px)] mt-4">Publish to the blog</h1>
+      <h1 className="display text-[clamp(34px,5vw,52px)]">Publish to the blog</h1>
       <p className="prose-body mt-4">
         Markdown is supported: headings, paragraphs, lists, fenced code, blockquotes, links.
       </p>

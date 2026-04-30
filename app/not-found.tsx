@@ -5,11 +5,10 @@ export default function NotFound() {
   return (
     <section className="container-narrow py-32 md:py-40 text-center">
       <div className="inline-block rotate-[-6deg] mb-10">
-        <Logo size={84} />
+        <Logo size={96} />
       </div>
-      <p className="eyebrow eyebrow--brand">Not found · 404</p>
-      <h1 className="display text-[clamp(36px,5.6vw,64px)] mt-5">
-        The page you opened isn't in the box.
+      <h1 className="display text-[clamp(36px,5.6vw,64px)]">
+        Not in the box.
       </h1>
       <p className="prose-body mt-6">
         Try the documentation, the blog, or the forum.

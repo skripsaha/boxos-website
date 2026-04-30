@@ -5,26 +5,27 @@ const cols = [
   {
     title: "Project",
     items: [
+      { label: "Architecture", href: "/architecture" },
       { label: "Documentation", href: "/docs" },
-      { label: "Blog", href: "/blog" },
-      { label: "Forum", href: "/forum" },
+      { label: "Download", href: "/download" },
+      { label: "Changelog", href: "/changelog" },
       { label: "Source", href: "https://github.com/skripsaha/boxos", external: true },
     ],
   },
   {
-    title: "Subsystems",
+    title: "Primitives",
     items: [
       { label: "Cabin (process)", href: "/docs#cabin" },
       { label: "Pocket (IPC)", href: "/docs#pocket" },
-      { label: "Manifest (capabilities)", href: "/docs#manifest" },
+      { label: "Manifest (syscalls)", href: "/docs#manifest" },
       { label: "Deck (storage)", href: "/docs#deck" },
     ],
   },
   {
     title: "Community",
     items: [
-      { label: "Forum index", href: "/forum" },
-      { label: "Recent threads", href: "/forum#recent" },
+      { label: "Blog", href: "/blog" },
+      { label: "Forum", href: "/forum" },
       { label: "Sign in", href: "/login" },
       { label: "Create account", href: "/register" },
     ],
@@ -42,15 +43,14 @@ export function Footer() {
             A non-Unix kernel for x86_64. Written from first principles —
             asymmetric multiprocessing, capability-mediated IPC, content-addressed storage.
           </p>
-          <p className="eyebrow mt-8">Status</p>
-          <p className="mt-1.5 text-sm tabular text-[color:var(--color-ink-2)]">
-            <span className="dot" /> &nbsp;Active development · v0.1.0-alpha
+          <p className="mt-8 text-sm text-[color:var(--color-ink-2)]">
+            <span className="dot" /> &nbsp;Active development
           </p>
         </div>
 
         {cols.map((col) => (
           <div key={col.title} className="md:col-span-2">
-            <p className="eyebrow">{col.title}</p>
+            <p className="text-[13px] font-medium text-[color:var(--color-ink-2)]">{col.title}</p>
             <ul className="mt-4 space-y-2.5">
               {col.items.map((it) => (
                 <li key={it.label}>
@@ -78,7 +78,7 @@ export function Footer() {
         ))}
 
         <div className="col-span-2 md:col-span-2">
-          <p className="eyebrow">License</p>
+          <p className="text-[13px] font-medium text-[color:var(--color-ink-2)]">License</p>
           <p className="mt-4 text-sm text-[color:var(--color-ink-2)]">
             Source under the project's open license. Site content © BoxOS contributors.
           </p>
@@ -87,11 +87,11 @@ export function Footer() {
 
       <div className="border-t hairline">
         <div className="container-x py-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <p className="text-xs tabular text-[color:var(--color-ink-3)] font-mono">
-            © {year} BoxOS · built bare-metal on x86_64
+          <p className="text-xs tabular text-[color:var(--color-ink-3)]">
+            © {year} BoxOS
           </p>
-          <p className="text-xs tabular text-[color:var(--color-ink-3)] font-mono">
-            handcrafted in C and assembly
+          <p className="text-xs tabular text-[color:var(--color-ink-3)]">
+            written in C and assembly
           </p>
         </div>
       </div>

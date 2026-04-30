@@ -10,8 +10,7 @@ export default async function LoginPage() {
   if (u) redirect("/account");
   return (
     <section className="container-narrow py-20 md:py-28">
-      <p className="eyebrow eyebrow--brand">Welcome back</p>
-      <h1 className="display text-[clamp(34px,5vw,52px)] mt-4">Sign in to BoxOS</h1>
+      <h1 className="display text-[clamp(34px,5vw,52px)]">Sign in</h1>
       <p className="prose-body mt-4">Use your username or email.</p>
 
       <div className="mt-12 surface rounded-[12px] p-7 md:p-9">

@@ -8,24 +8,21 @@ export default function DocsPage() {
     <section>
       <header className="border-b hairline">
         <div className="container-x py-20 md:py-28">
-          <p className="eyebrow eyebrow--brand">Documentation · v0.1.0-alpha</p>
-          <h1 className="display text-[clamp(40px,6vw,76px)] mt-4 max-w-[20ch]">
-            How BoxOS is built, in twelve pages.
+          <h1 className="display text-[clamp(40px,6vw,76px)] max-w-[20ch]">
+            Documentation.
           </h1>
           <p className="prose-body mt-6 max-w-[58ch]">
-            This is a living overview, written alongside the kernel. Sections marked
-            <span className="tag tag-brand mx-1.5">draft</span>
-            are still in flux. Sections marked
-            <span className="tag mx-1.5">stable</span>
-            describe behavior the kernel will not break without notice.
+            A living overview, written alongside the kernel. Sections labelled <em>draft</em> are
+            in flux; sections labelled <em>stable</em> describe behaviour the kernel will not
+            change without notice.
           </p>
         </div>
       </header>
 
       <div className="container-x py-16 md:py-20 grid lg:grid-cols-12 gap-12 lg:gap-16">
         <aside className="lg:col-span-3 lg:sticky lg:top-24 self-start">
-          <p className="eyebrow">Contents</p>
-          <ul className="mt-5 space-y-2.5 text-sm">
+          <p className="text-[13px] font-medium text-[color:var(--color-ink-2)] mb-4">Contents</p>
+          <ul className="space-y-2.5 text-sm">
             {[
               ["Overview", "overview"],
               ["Cabin — process", "cabin"],
@@ -172,9 +169,11 @@ make run CORES=4 MEM=16G  # SMP
 function Section({ id, title, tag, children }: { id: string; title: string; tag: "stable" | "draft"; children: React.ReactNode }) {
   return (
     <section id={id} className="scroll-mt-24">
-      <div className="flex items-center gap-3 not-prose">
+      <div className="flex items-baseline gap-3 not-prose">
         <h2 className="!mt-0 !mb-0">{title}</h2>
-        <span className={tag === "stable" ? "tag" : "tag tag-brand"}>{tag}</span>
+        <span className="text-[11px] tabular font-mono text-[color:var(--color-ink-3)] uppercase tracking-wider">
+          {tag}
+        </span>
       </div>
       {children}
     </section>

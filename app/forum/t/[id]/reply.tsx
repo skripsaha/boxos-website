@@ -34,7 +34,7 @@ export function ReplyForm({ threadId }: { threadId: number }) {
 
   return (
     <form ref={ref} onSubmit={onSubmit} className="space-y-4">
-      <p className="eyebrow eyebrow--brand">Your reply</p>
+      <p className="text-[14px] font-medium text-[color:var(--color-ink-2)]">Your reply</p>
       <textarea
         name="body"
         required
@@ -44,9 +44,7 @@ export function ReplyForm({ threadId }: { threadId: number }) {
       />
       {error && <p className="text-sm text-[color:var(--color-danger)]">{error}</p>}
       <div className="flex items-center justify-between">
-        <p className="text-xs tabular font-mono text-[color:var(--color-ink-3)]">
-          Markdown · be specific · stay technical
-        </p>
+        <p className="text-xs text-[color:var(--color-ink-3)]">Markdown supported.</p>
         <button type="submit" disabled={pending} className="btn btn-primary">
           {pending ? "Posting…" : "Post reply"}
         </button>

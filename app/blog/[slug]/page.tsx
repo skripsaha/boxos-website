@@ -43,8 +43,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           <Link href="/blog" className="text-sm text-[color:var(--color-ink-2)] hover:text-[color:var(--color-ink)] inline-flex items-center gap-1">
             <span className="text-[color:var(--color-ink-3)]">←</span> All posts
           </Link>
-          <p className="eyebrow eyebrow--brand mt-10">Blog</p>
-          <h1 className="display text-[clamp(36px,5.6vw,68px)] mt-5">
+          <h1 className="display text-[clamp(36px,5.6vw,68px)] mt-10">
             {post.title}
           </h1>
           <p className="mt-7 text-sm tabular font-mono text-[color:var(--color-ink-3)]">
@@ -60,8 +59,8 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       {others.length > 0 && (
         <section className="border-t hairline">
           <div className="container-x py-20">
-            <p className="eyebrow eyebrow--brand">Read next</p>
-            <ul className="mt-8 grid md:grid-cols-3 gap-6">
+            <p className="text-[13px] font-medium text-[color:var(--color-ink-2)] mb-7">Read next</p>
+            <ul className="grid md:grid-cols-3 gap-6">
               {others.map((o) => (
                 <li key={o.id}>
                   <Link href={`/blog/${o.slug}`} className="card p-6 group block h-full">
